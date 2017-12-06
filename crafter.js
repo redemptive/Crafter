@@ -4,8 +4,8 @@ $(document).ready(function() {
 	var tileSize = 25;
 	var mapSize = 20;
 	var tiles = [
-		"black",
-		"grey",
+		"brown",
+		"green",
 		"blue",
 		"white",
 	];
@@ -45,10 +45,10 @@ $(document).ready(function() {
 		initiateMap();
 	}
 
-	function drawMapCircle(x, y, radius, tile) {
+	function drawMapSquare(x, y, radius, tile) {
 		for (var i = x - radius; i < x + radius; i++) {
-			for (var j = y - radius; i < y + radius; j++) {
-				map[[i][j]] = tiles[tile];
+			for (var j = y - radius; j < y + radius; j++) {
+				map[i][j] = tile;
 			}
 		}
 	}
@@ -65,10 +65,10 @@ $(document).ready(function() {
 		for (var i = 0; i < mapSize;i++) {
 			map.push([]);
 			for (var j = 0; j < mapSize;j++) {
-				map[i].push(Math.floor(Math.random() * 3));
+				map[i].push(1);
 			}
 		}
-		//drawMapCircle(10,10,5,1);
+		drawMapSquare(10,10,5,2);
 	}
 
 	function updateGameArea() {
