@@ -45,6 +45,14 @@ $(document).ready(function() {
 		initiateMap();
 	}
 
+	function drawMapCircle(x, y, radius, tile) {
+		for (var i = x - radius; i < x + radius; i++) {
+			for (var j = y - radius; i < y + radius; j++) {
+				map[[i][j]] = tiles[tile];
+			}
+		}
+	}
+
 	function drawMap() {
 		for (var i = 0; i < map[0].length;i++) {
 			for (var j = 0; j < map[1].length;j++) {
@@ -60,6 +68,7 @@ $(document).ready(function() {
 				map[i].push(Math.floor(Math.random() * 3));
 			}
 		}
+		//drawMapCircle(10,10,5,1);
 	}
 
 	function updateGameArea() {
