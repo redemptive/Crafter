@@ -1,19 +1,39 @@
 $(document).ready(function() {
 
 	var map = [];
+	var mapSize = 40;
 	var tileSize = 25;
-	var mapSize = 20;
+	var slowdownCounter = 0;
 	var tiles = [
 		"brown",
 		"green",
 		"blue",
-		"white",
+		"brown",
 	];
 
 	var player = {
 		xPos: 0,
-		yPos: 0
+		yPos: 0,
+		color: "black"
 	}
+
+	//87 & 38 = up, 68 & 39 = right, 65 & 40 = down, 83 & 37 = left, 80 = pause
+	var keyMap = {87: false, 38: false, 68: false, 39: false, 65: false, 40: false, 83: false, 37: false, 80: false};
+	
+	$(document).keydown(function(e) {
+		if (e.keyCode in keyMap) {
+			keyMap[e.keyCode] = true;
+			if (paused && e.keyCode == 80) {
+				paused = false;
+			} else if (!paused && e.keyCode == 80){
+				paused = true;
+			}
+		}
+	}).keyup(function(e) {
+		if (e.keyCode in keyMap) {
+			keyMap[e.keyCode] = false;
+		}
+	});
 
 	var gameArea = {
 			canvas : document.createElement("canvas"),
@@ -74,7 +94,7 @@ $(document).ready(function() {
 				gameArea.draw(tileSize,tileSize,i*tileSize,j*tileSize,tiles[map[i][j]]);
 			}
 		}
-		gameArea.draw(tileSize, tileSize, player.xPos * tileSize, player.yPos * tileSize,"black");
+		gameArea.draw(tileSize, tileSize, player.xPos * tileSize, player.yPos * tileSize,player.color);
 	}
 
 	function initiateMap() {
@@ -84,13 +104,43 @@ $(document).ready(function() {
 				map[i].push(1);
 			}
 		}
-		drawMapSquare(12,10,randBounds(2,5),2);
-		drawMapSquare(6,6,3,3);
+		drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),2);
+		drawMapSquare(6,6,randBounds(2,5),3);
+	}
+
+	function checkMovement() {
+		if (keyMap[87] || keyMap[38]) {
+			if (player.yPos > 0) {
+				player.yPos -= 1;
+			}
+		} 
+		if (keyMap[68] || keyMap[39]) {
+			if (player.xPos < mapSize - 1) {
+				player.xPos += 1;
+			}
+		}
+		if (keyMap[65] || keyMap[37]) {
+			if (player.xPos > 0) {
+				player.xPos -= 1;
+			}
+		}
+		if (keyMap[83] || keyMap[40]) {
+			if (player.yPos < mapSize - 1) {
+				player.yPos += 1;
+			}
+		}
 	}
 
 	function updateGameArea() {
+		if (slowdownCounter > 10) {
+			checkMovement();
+			slowdownCounter = 0;
+		} else {
+			slowdownCounter ++;
+		}
 		gameArea.clear();
 		drawMap();
+
 	}
 
 	gameArea.start();
