@@ -4,11 +4,12 @@ $(document).ready(function() {
 	var mapSize = 40;
 	var tileSize = 25;
 	var slowdownCounter = 0;
+	var paused = false;
 	var tiles = [
 		{color: "brown", canWalkOver: false},
 		{color: "green", canWalOver: true},
 		{color: "blue", canWalkOver: true},
-		{color: "brown", canWalkOver: true},
+		{color: "brown", canWalkOver: true}
 	];
 
 	var player = {
@@ -36,37 +37,40 @@ $(document).ready(function() {
 	});
 
 	var gameArea = {
-			canvas : document.createElement("canvas"),
-			start : function () {
-				this.canvas.width = mapSize * tileSize;
-				this.canvas.height = mapSize * tileSize;
-				this.context = this.canvas.getContext("2d");
-				document.body.insertBefore(this.canvas,document.body.childNodes[0]);
-				this.interval = setInterval(updateGameArea, 20);
-			},
-			clear : function () {
-				this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-				this.draw(this.canvas.height,this.canvas.width,0,0,"white");
-			},
-			draw : function (height,width,x,y,color,rotation = 0) {
-				//Draw function with rotation if provided
-				this.context.save();
-				this.context.fillStyle = color;
-				this.context.translate(x,y);
-				this.context.rotate(rotation);
-				this.context.fillRect(0, 0, width, height);
-				this.context.restore();
-			},
-			drawText : function (theString, x, y, size = 16) {
-				//Draw function for text
-				this.context.save();
-				this.context.font = size + "px Verdana";
-				this.context.fillText(theString, x, y);
-				this.context.restore();
-			}
-		};
+		canvas : document.createElement("canvas"),
+		start : function () {
+			//Initiate the game area
+			this.canvas.width = mapSize * tileSize;
+			this.canvas.height = mapSize * tileSize;
+			this.context = this.canvas.getContext("2d");
+			document.body.insertBefore(this.canvas,document.body.childNodes[0]);
+			this.interval = setInterval(updateGameArea, 20);
+		},
+		clear : function () {
+			//Clear the canvas to avoid drawing over the last frame
+			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+			this.draw(this.canvas.height,this.canvas.width,0,0,"white");
+		},
+		draw : function (height,width,x,y,color,rotation = 0) {
+			//Draw function with rotation if provided
+			this.context.save();
+			this.context.fillStyle = color;
+			this.context.translate(x,y);
+			this.context.rotate(rotation);
+			this.context.fillRect(0, 0, width, height);
+			this.context.restore();
+		},
+		drawText : function (theString, x, y, size = 16) {
+			//Draw function for text
+			this.context.save();
+			this.context.font = size + "px Verdana";
+			this.context.fillText(theString, x, y);
+			this.context.restore();
+		}
+	};
 
 	function initPlayer() {
+		//Give the player a random position when the game starts and the function is called
 		player.xPos = randBounds(0,mapSize);
 		player.yPos = randBounds(0,mapSize);
 	}
@@ -76,7 +80,7 @@ $(document).ready(function() {
 	}
 		
 	function startGame() {
-		initiateMap();
+		initMap();
 		initPlayer();
 	}
 
@@ -89,41 +93,49 @@ $(document).ready(function() {
 	}
 
 	function drawMap() {
+		//Go through the map array and draw all the tiles to the canvas
 		for (var i = 0; i < map[0].length;i++) {
 			for (var j = 0; j < map[1].length;j++) {
 				gameArea.draw(tileSize,tileSize,i*tileSize,j*tileSize,tiles[map[i][j]].color);
 			}
 		}
+		//Draw the player
 		gameArea.draw(tileSize, tileSize, player.xPos * tileSize, player.yPos * tileSize,player.color);
 	}
 
-	function initiateMap() {
+	function initMap() {
+		//Fill the map array with grass at tiles[1]
 		for (var i = 0; i < mapSize;i++) {
 			map.push([]);
 			for (var j = 0; j < mapSize;j++) {
 				map[i].push(1);
 			}
 		}
+		//Draw random squares on the map
 		drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),2);
 		drawMapSquare(6,6,randBounds(2,5),3);
 	}
 
 	function checkMovement() {
+		//Up
 		if (keyMap[87] || keyMap[38]) {
 			if (player.yPos > 0) {
 				player.yPos -= 1;
 			}
 		} 
+		//Right
 		if (keyMap[68] || keyMap[39]) {
 			if (player.xPos < mapSize - 1) {
 				player.xPos += 1;
 			}
 		}
+		//Left
 		if (keyMap[65] || keyMap[37]) {
 			if (player.xPos > 0) {
 				player.xPos -= 1;
 			}
 		}
+		//Down
 		if (keyMap[83] || keyMap[40]) {
 			if (player.yPos < mapSize - 1) {
 				player.yPos += 1;
@@ -132,6 +144,7 @@ $(document).ready(function() {
 	}
 
 	function updateGameArea() {
+		//Slow down the player movement
 		if (slowdownCounter > 10) {
 			checkMovement();
 			slowdownCounter = 0;
@@ -142,6 +155,7 @@ $(document).ready(function() {
 		drawMap();
 	}
 
+	//Start the game
 	gameArea.start();
 	startGame();
 
