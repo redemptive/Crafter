@@ -10,6 +10,11 @@ $(document).ready(function() {
 		"white",
 	];
 
+	var player = {
+		xPos: 0,
+		yPos: 0
+	}
+
 	var gameArea = {
 			canvas : document.createElement("canvas"),
 			start : function () {
@@ -40,9 +45,19 @@ $(document).ready(function() {
 				this.context.restore();
 			}
 		};
+
+	function initPlayer() {
+		player.xPos = randBounds(0,mapSize);
+		player.yPos = randBounds(0,mapSize);
+	}
+
+	function randBounds(min, max) {
+		return Math.floor((Math.random() * max) + min);
+	}
 		
 	function startGame() {
 		initiateMap();
+		initPlayer();
 	}
 
 	function drawMapSquare(x, y, radius, tile) {
@@ -59,6 +74,7 @@ $(document).ready(function() {
 				gameArea.draw(tileSize,tileSize,i*tileSize,j*tileSize,tiles[map[i][j]]);
 			}
 		}
+		gameArea.draw(tileSize, tileSize, player.xPos * tileSize, player.yPos * tileSize,"black");
 	}
 
 	function initiateMap() {
@@ -68,7 +84,8 @@ $(document).ready(function() {
 				map[i].push(1);
 			}
 		}
-		drawMapSquare(10,10,5,2);
+		drawMapSquare(12,10,randBounds(2,5),2);
+		drawMapSquare(6,6,3,3);
 	}
 
 	function updateGameArea() {
