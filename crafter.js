@@ -5,17 +5,17 @@ $(document).ready(function() {
 	var tileSize = 25;
 	var slowdownCounter = 0;
 	var tiles = [
-		"brown",
-		"green",
-		"blue",
-		"brown",
+		{color: "brown", canWalkOver: false},
+		{color: "green", canWalOver: true},
+		{color: "blue", canWalkOver: true},
+		{color: "brown", canWalkOver: true},
 	];
 
 	var player = {
 		xPos: 0,
 		yPos: 0,
 		color: "black"
-	}
+	};
 
 	//87 & 38 = up, 68 & 39 = right, 65 & 40 = down, 83 & 37 = left, 80 = pause
 	var keyMap = {87: false, 38: false, 68: false, 39: false, 65: false, 40: false, 83: false, 37: false, 80: false};
@@ -91,7 +91,7 @@ $(document).ready(function() {
 	function drawMap() {
 		for (var i = 0; i < map[0].length;i++) {
 			for (var j = 0; j < map[1].length;j++) {
-				gameArea.draw(tileSize,tileSize,i*tileSize,j*tileSize,tiles[map[i][j]]);
+				gameArea.draw(tileSize,tileSize,i*tileSize,j*tileSize,tiles[map[i][j]].color);
 			}
 		}
 		gameArea.draw(tileSize, tileSize, player.xPos * tileSize, player.yPos * tileSize,player.color);
@@ -140,7 +140,6 @@ $(document).ready(function() {
 		}
 		gameArea.clear();
 		drawMap();
-
 	}
 
 	gameArea.start();
