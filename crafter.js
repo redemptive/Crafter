@@ -1,17 +1,18 @@
 $(document).ready(function() {
 
 	var map = [];
-	var mapSize = 40;
+	var mapSize = 100;
 	var tileSize = 25;
-	var slowdownCounter = 0;
 	var paused = false;
-	var viewHeight = 7;
-	var viewWidth = 7;
+	var viewHeight = 10;
+	var viewWidth = 10;
 	var tiles = [
 		{color: "brown", canWalkOver: false},
 		{color: "green", canWalOver: true},
 		{color: "blue", canWalkOver: true},
-		{color: "brown", canWalkOver: true}
+		{color: "brown", canWalkOver: true},
+		{color: false, canWalkOver: false, asset: 0},
+		{color: false, canWalOver: false, asset: 1}
 	];
 
 	var player = {
@@ -20,21 +21,32 @@ $(document).ready(function() {
 		color: "black"
 	};
 
-	//87 & 38 = up, 68 & 39 = right, 65 & 40 = down, 83 & 37 = left, 80 = pause
-	var keyMap = {87: false, 38: false, 68: false, 39: false, 65: false, 40: false, 83: false, 37: false, 80: false};
+	var images = [];
 	
 	$(document).keydown(function(e) {
-		if (e.keyCode in keyMap) {
-			keyMap[e.keyCode] = true;
-			if (paused && e.keyCode == 80) {
-				paused = false;
-			} else if (!paused && e.keyCode == 80){
-				paused = true;
+		//Up
+		if (e.keyCode == 87 || e.keyCode == 38) {
+			if (player.yPos > 0) {
+				player.yPos -= 1;
+			}
+		} 
+		//Right
+		if (e.keyCode == 68 || e.keyCode == 39) {
+			if (player.xPos < mapSize - 1) {
+				player.xPos += 1;
 			}
 		}
-	}).keyup(function(e) {
-		if (e.keyCode in keyMap) {
-			keyMap[e.keyCode] = false;
+		//Left
+		if (e.keyCode == 65 || e.keyCode == 37) {
+			if (player.xPos > 0) {
+				player.xPos -= 1;
+			}
+		}
+		//Down
+		if (e.keyCode == 83 || e.keyCode == 40) {
+			if (player.yPos < mapSize - 1) {
+				player.yPos += 1;
+			}
 		}
 	});
 
@@ -68,8 +80,18 @@ $(document).ready(function() {
 			this.context.font = size + "px Verdana";
 			this.context.fillText(theString, x, y);
 			this.context.restore();
+		},
+		drawImg : function (width, height, x, y, image) {
+			this.context.drawImage(image, x, y, width, height);
 		}
 	};
+
+	function getAssets() {
+		images.push(new Image(tileSize, tileSize));
+		images[0].src = "assets/tree.png";
+		images.push(new Image(tileSize, tileSize));
+		images[1].src = "assets/rock.png";
+	}
 
 	function initPlayer() {
 		//Give the player a random position when the game starts and the function is called
@@ -108,7 +130,11 @@ $(document).ready(function() {
 		}
 		for (var i = centerX - viewWidth; i < centerX + viewWidth;i++) {
 			for (var j = centerY - viewHeight; j < centerY + viewHeight;j++) {
-				gameArea.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
+				if (tiles[map[i][j]].color != false) {
+					gameArea.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
+				} else {
+					gameArea.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, images[tiles[map[i][j]].asset]);
+				}
 			}
 		}
 		//Draw the player
@@ -124,51 +150,19 @@ $(document).ready(function() {
 			}
 		}
 		//Draw random squares on the map
-		drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),2);
-		drawMapSquare(6,6,randBounds(2,5),3);
-	}
-
-	function checkMovement() {
-		//Up
-		if (keyMap[87] || keyMap[38]) {
-			if (player.yPos > 0) {
-				player.yPos -= 1;
-			}
-		} 
-		//Right
-		if (keyMap[68] || keyMap[39]) {
-			if (player.xPos < mapSize - 1) {
-				player.xPos += 1;
-			}
-		}
-		//Left
-		if (keyMap[65] || keyMap[37]) {
-			if (player.xPos > 0) {
-				player.xPos -= 1;
-			}
-		}
-		//Down
-		if (keyMap[83] || keyMap[40]) {
-			if (player.yPos < mapSize - 1) {
-				player.yPos += 1;
-			}
+		for (var i = 0; i < randBounds(10,15); i++) {
+			drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),randBounds(0,tiles.length));
 		}
 	}
 
 	function updateGameArea() {
-		//Slow down the player movement
-		if (slowdownCounter > 10) {
-			checkMovement();
-			slowdownCounter = 0;
-		} else {
-			slowdownCounter ++;
-		}
 		gameArea.clear();
 		drawMap(player.xPos,player.yPos);
 	}
 
 	//Start the game
 	gameArea.start();
+	getAssets();
 	startGame();
 
 });
