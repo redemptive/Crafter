@@ -82,11 +82,13 @@ $(document).ready(function() {
 			this.context.restore();
 		},
 		drawImg : function (width, height, x, y, image) {
+			//Draw an image with the given parameters
 			this.context.drawImage(image, x, y, width, height);
 		}
 	};
 
 	function getAssets() {
+		//Get all the images from the assets folder
 		images.push(new Image(tileSize, tileSize));
 		images[0].src = "assets/tree.png";
 		images.push(new Image(tileSize, tileSize));
@@ -100,6 +102,7 @@ $(document).ready(function() {
 	}
 
 	function randBounds(min, max) {
+		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
 	}
 		
@@ -109,6 +112,7 @@ $(document).ready(function() {
 	}
 
 	function drawMapSquare(x, y, radius, tile) {
+		//draw a square to the map at x and y with tile and a radius
 		for (var i = x - radius; i < x + radius; i++) {
 			for (var j = y - radius; j < y + radius; j++) {
 				map[i][j] = tile;
@@ -130,9 +134,11 @@ $(document).ready(function() {
 		}
 		for (var i = centerX - viewWidth; i < centerX + viewWidth;i++) {
 			for (var j = centerY - viewHeight; j < centerY + viewHeight;j++) {
+				//if the tile is a plain colour tile
 				if (tiles[map[i][j]].color != false) {
 					gameArea.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
 				} else {
+					//If the tile is an image asset draw with draw image
 					gameArea.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, images[tiles[map[i][j]].asset]);
 				}
 			}
