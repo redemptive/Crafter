@@ -1,12 +1,12 @@
 $(document).ready(function() {
 
-	var map = [];
-	var mapSize = 100;
-	var tileSize = 25;
-	var paused = false;
-	var viewHeight = 10;
-	var viewWidth = 10;
-	var tiles = [
+	const map = [];
+	const mapSize = 100;
+	const tileSize = 25;
+	const paused = false;
+	const viewHeight = 10;
+	const viewWidth = 10;
+	const tiles = [
 		{color: "brown", canWalkOver: false},
 		{color: "green", canWalOver: true},
 		{color: "blue", canWalkOver: true},
@@ -15,13 +15,13 @@ $(document).ready(function() {
 		{color: false, canWalOver: false, asset: 1}
 	];
 
-	var player = {
+	const player = {
 		xPos: 0,
 		yPos: 0,
 		color: "black"
 	};
 
-	var images = [];
+	const images = [];
 	
 	$(document).keydown(function(e) {
 		//Up
