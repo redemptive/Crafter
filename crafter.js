@@ -5,6 +5,8 @@ $(document).ready(function() {
 	var tileSize = 25;
 	var slowdownCounter = 0;
 	var paused = false;
+	var viewHeight = 7;
+	var viewWidth = 7;
 	var tiles = [
 		{color: "brown", canWalkOver: false},
 		{color: "green", canWalOver: true},
@@ -40,8 +42,8 @@ $(document).ready(function() {
 		canvas : document.createElement("canvas"),
 		start : function () {
 			//Initiate the game area
-			this.canvas.width = mapSize * tileSize;
-			this.canvas.height = mapSize * tileSize;
+			this.canvas.width = (viewWidth * 2) * tileSize;
+			this.canvas.height = (viewHeight * 2)* tileSize;
 			this.context = this.canvas.getContext("2d");
 			document.body.insertBefore(this.canvas,document.body.childNodes[0]);
 			this.interval = setInterval(updateGameArea, 20);
@@ -92,15 +94,25 @@ $(document).ready(function() {
 		}
 	}
 
-	function drawMap() {
+	function drawMap(centerX, centerY) {
 		//Go through the map array and draw all the tiles to the canvas
-		for (var i = 0; i < map[0].length;i++) {
-			for (var j = 0; j < map[1].length;j++) {
-				gameArea.draw(tileSize,tileSize,i*tileSize,j*tileSize,tiles[map[i][j]].color);
+		if (centerX + viewWidth > map[0].length) {
+			centerX = map[0].length - viewWidth;
+		} else if (centerX - viewWidth < 0) {
+			centerX = viewWidth;
+		}
+		if (centerY + viewHeight > map[1].length) {
+			centerY = map[1].length - viewHeight;
+		} else if (centerY - viewHeight < 0) {
+			centerY = viewHeight;
+		}
+		for (var i = centerX - viewWidth; i < centerX + viewWidth;i++) {
+			for (var j = centerY - viewHeight; j < centerY + viewHeight;j++) {
+				gameArea.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
 			}
 		}
 		//Draw the player
-		gameArea.draw(tileSize, tileSize, player.xPos * tileSize, player.yPos * tileSize,player.color);
+		gameArea.draw(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize,player.color);
 	}
 
 	function initMap() {
@@ -152,7 +164,7 @@ $(document).ready(function() {
 			slowdownCounter ++;
 		}
 		gameArea.clear();
-		drawMap();
+		drawMap(player.xPos,player.yPos);
 	}
 
 	//Start the game
