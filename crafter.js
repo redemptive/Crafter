@@ -120,8 +120,21 @@ $(document).ready(function() {
 		}
 	}
 
-	function drawMap(centerX, centerY) {
+	function drawMapLine(startX, startY, tile, horizontal) {
+		if (horizontal) {
+			for (var i = startY; i < map[0].length; i++) {
+				map[startX][i] = tile;
+			}
+		} else {
+			for (var i = startX; i < map[0].length; i++) {
+				map[i][startY] = tile;
+			}
+		}
+	}
+
+	function renderMap(centerX, centerY) {
 		//Go through the map array and draw all the tiles to the canvas
+		//make sure the camera doesn't go out of bounds for drawing the map array
 		if (centerX + viewWidth > map[0].length) {
 			centerX = map[0].length - viewWidth;
 		} else if (centerX - viewWidth < 0) {
@@ -159,16 +172,16 @@ $(document).ready(function() {
 		for (var i = 0; i < randBounds(10,15); i++) {
 			drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),randBounds(0,tiles.length));
 		}
+		drawMapLine(10,10,2,false);
 	}
 
 	function updateGameArea() {
 		gameArea.clear();
-		drawMap(player.xPos,player.yPos);
+		renderMap(player.xPos,player.yPos);
 	}
 
 	//Start the game
 	gameArea.start();
 	getAssets();
 	startGame();
-
 });
