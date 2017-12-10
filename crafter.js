@@ -6,6 +6,7 @@ $(document).ready(function() {
 	const paused = false;
 	const viewHeight = 10;
 	const viewWidth = 10;
+	const playerImg = new Image(tileSize, tileSize);
 	const tiles = [
 		{color: "brown", canWalkOver: false},
 		{color: "green", canWalOver: true},
@@ -50,7 +51,7 @@ $(document).ready(function() {
 		}
 	});
 
-	var gameArea = {
+	const gameArea = {
 		canvas : document.createElement("canvas"),
 		start : function () {
 			//Initiate the game area
@@ -89,6 +90,7 @@ $(document).ready(function() {
 
 	function getAssets() {
 		//Get all the images from the assets folder
+		playerImg.src = "assets/player.png";
 		images.push(new Image(tileSize, tileSize));
 		images[0].src = "assets/tree.png";
 		images.push(new Image(tileSize, tileSize));
@@ -157,7 +159,7 @@ $(document).ready(function() {
 			}
 		}
 		//Draw the player
-		gameArea.draw(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize,player.color);
+		gameArea.drawImg(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize, playerImg);
 	}
 
 	function initMap() {
@@ -172,7 +174,9 @@ $(document).ready(function() {
 		for (var i = 0; i < randBounds(10,15); i++) {
 			drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),randBounds(0,tiles.length));
 		}
-		drawMapLine(10,10,2,false);
+		for (var i = 0; i < randBounds(2,4); i ++) {
+			drawMapLine(randBounds(0,10),randBounds(0,10),randBounds(0,tiles.length),Math.random() >= 0.5);
+		}
 	}
 
 	function updateGameArea() {
