@@ -6,7 +6,7 @@ $(document).ready(function() {
 	const paused = false;
 	const viewHeight = 10;
 	const viewWidth = 10;
-	const playerImg = new Image(tileSize, tileSize);
+	const playerImg = [];
 	const tiles = [
 		{color: "brown", canWalkOver: false},
 		{color: "green", canWalOver: true},
@@ -19,7 +19,19 @@ $(document).ready(function() {
 	const player = {
 		xPos: 0,
 		yPos: 0,
-		color: "black"
+		color: "black",
+		getSprite: function() {
+			switch(map[this.xPos][this.yPos]) {
+				case 0:
+					return playerImg[2];
+					break;
+				case 2:
+					return playerImg[1];
+					break;
+				default:
+					return playerImg[0];
+			}
+		}
 	};
 
 	const images = [];
@@ -90,7 +102,12 @@ $(document).ready(function() {
 
 	function getAssets() {
 		//Get all the images from the assets folder
-		playerImg.src = "assets/player.png";
+		playerImg.push(new Image(tileSize, tileSize));
+		playerImg[0].src = "assets/player.png";
+		playerImg.push(new Image(tileSize, tileSize));
+		playerImg[1].src = "assets/playerWater.png";
+		playerImg.push(new Image(tileSize, tileSize));
+		playerImg[2].src = "assets/playerDirt.png";
 		images.push(new Image(tileSize, tileSize));
 		images[0].src = "assets/tree.png";
 		images.push(new Image(tileSize, tileSize));
@@ -123,11 +140,14 @@ $(document).ready(function() {
 	}
 
 	function drawMapLine(startX, startY, tile, horizontal) {
+		//Draw a line on the map starting at startX and startY with the selected tile
+		//Horizontal line
 		if (horizontal) {
 			for (var i = startY; i < map[0].length; i++) {
 				map[startX][i] = tile;
 			}
 		} else {
+			//Vertical line
 			for (var i = startX; i < map[0].length; i++) {
 				map[i][startY] = tile;
 			}
@@ -159,7 +179,7 @@ $(document).ready(function() {
 			}
 		}
 		//Draw the player
-		gameArea.drawImg(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize, playerImg);
+		gameArea.drawImg(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize, player.getSprite());
 	}
 
 	function initMap() {
@@ -172,8 +192,9 @@ $(document).ready(function() {
 		}
 		//Draw random squares on the map
 		for (var i = 0; i < randBounds(10,15); i++) {
-			drawMapSquare(randBounds(5,mapSize - 5),randBounds(5,mapSize - 5),randBounds(2,5),randBounds(0,tiles.length));
+			drawMapSquare(randBounds(5,mapSize - 6),randBounds(5,mapSize - 6),randBounds(2,5),randBounds(0,tiles.length));
 		}
+		//Draw random lines on the map
 		for (var i = 0; i < randBounds(2,4); i ++) {
 			drawMapLine(randBounds(0,10),randBounds(0,10),randBounds(0,tiles.length),Math.random() >= 0.5);
 		}
