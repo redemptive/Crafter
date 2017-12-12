@@ -9,11 +9,11 @@ $(document).ready(function() {
 	const playerImg = [];
 	const tiles = [
 		{color: "brown", canWalkOver: false},
-		{color: "green", canWalOver: true},
+		{color: "green", canWalkOver: true},
 		{color: "blue", canWalkOver: true},
 		{color: "brown", canWalkOver: true},
 		{color: false, canWalkOver: false, asset: 0},
-		{color: false, canWalOver: false, asset: 1}
+		{color: false, canWalkOver: false, asset: 1}
 	];
 
 	const player = {
@@ -40,27 +40,39 @@ $(document).ready(function() {
 		//Up
 		if (e.keyCode == 87 || e.keyCode == 38) {
 			if (player.yPos > 0) {
-				player.yPos -= 1;
+				if (tiles[map[player.xPos][player.yPos - 1]].canWalkOver) {
+					player.yPos -= 1;
+				}
 			}
 		} 
 		//Right
 		if (e.keyCode == 68 || e.keyCode == 39) {
 			if (player.xPos < mapSize - 1) {
-				player.xPos += 1;
+				if (tiles[map[player.xPos + 1][player.yPos]].canWalkOver) {
+					player.xPos += 1;
+				}
 			}
 		}
 		//Left
 		if (e.keyCode == 65 || e.keyCode == 37) {
 			if (player.xPos > 0) {
-				player.xPos -= 1;
+				if (tiles[map[player.xPos - 1][player.yPos]].canWalkOver) {
+					player.xPos -= 1;
+				}
 			}
 		}
 		//Down
 		if (e.keyCode == 83 || e.keyCode == 40) {
 			if (player.yPos < mapSize - 1) {
-				player.yPos += 1;
+				if (tiles[map[player.xPos][player.yPos + 1]].canWalkOver) {
+					player.yPos += 1;
+				}
 			}
 		}
+		console.log(player.xPos);
+		console.log(player.yPos);
+		console.log(map[player.xPos][player.yPos]);
+		console.log(tiles[map[player.xPos][player.yPos]]);
 	});
 
 	const gameArea = {
@@ -68,7 +80,7 @@ $(document).ready(function() {
 		start : function () {
 			//Initiate the game area
 			this.canvas.width = (viewWidth * 2) * tileSize;
-			this.canvas.height = (viewHeight * 2)* tileSize;
+			this.canvas.height = (viewHeight * 2) * tileSize;
 			this.context = this.canvas.getContext("2d");
 			document.body.insertBefore(this.canvas,document.body.childNodes[0]);
 			this.interval = setInterval(updateGameArea, 20);
@@ -136,6 +148,15 @@ $(document).ready(function() {
 			for (var j = y - radius; j < y + radius; j++) {
 				map[i][j] = tile;
 			}
+		}
+	}
+
+	function drawRiver(startX, startY, endX, endY) {
+		var currentX = startX;
+		var currentY = startY;
+		for (var i = startX; i < endX; i++) {
+			if (startY)
+			map[i][j] = 2;
 		}
 	}
 
