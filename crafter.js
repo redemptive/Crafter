@@ -2,18 +2,20 @@ $(document).ready(function() {
 
 	const map = [];
 	const mapSize = 100;
-	const tileSize = 25;
+	const tileSize = 30;
 	const paused = false;
 	const viewHeight = 10;
 	const viewWidth = 10;
 	const playerImg = [];
+	var lastKey = "up";
 	const tiles = [
-		{color: "brown", canWalkOver: false},
+		{color: "brown", canWalkOver: true},
 		{color: "green", canWalkOver: true},
 		{color: "blue", canWalkOver: true},
 		{color: "brown", canWalkOver: true},
 		{color: false, canWalkOver: false, asset: 0},
-		{color: false, canWalkOver: false, asset: 1}
+		{color: false, canWalkOver: false, asset: 1},
+		{color: false, canWalkOver: true, asset: 2}
 	];
 
 	const player = {
@@ -44,6 +46,7 @@ $(document).ready(function() {
 					player.yPos -= 1;
 				}
 			}
+			lastKey = "up";
 		} 
 		//Right
 		if (e.keyCode == 68 || e.keyCode == 39) {
@@ -52,6 +55,7 @@ $(document).ready(function() {
 					player.xPos += 1;
 				}
 			}
+			lastKey = "right";
 		}
 		//Left
 		if (e.keyCode == 65 || e.keyCode == 37) {
@@ -60,6 +64,7 @@ $(document).ready(function() {
 					player.xPos -= 1;
 				}
 			}
+			lastKey = "left";
 		}
 		//Down
 		if (e.keyCode == 83 || e.keyCode == 40) {
@@ -67,6 +72,37 @@ $(document).ready(function() {
 				if (tiles[map[player.xPos][player.yPos + 1]].canWalkOver) {
 					player.yPos += 1;
 				}
+			}
+			lastKey = "down";
+		}
+		//e
+		if (e.keyCode == 69) {
+			if (lastKey == "up") {
+				map[player.xPos][player.yPos - 1] = 1;
+			}
+			if (lastKey == "down") {
+				map[player.xPos][player.yPos + 1] = 1;
+			}
+			if (lastKey == "left") {
+				map[player.xPos - 1][player.yPos] = 1;
+			}
+			if (lastKey == "right") {
+				map[player.xPos + 1][player.yPos] = 1;
+			}
+		}
+		//1
+		if (e.keyCode == 49) {
+			if (lastKey == "up" && map[player.xPos][player.yPos - 1] == 1) {
+				map[player.xPos][player.yPos - 1] = 4;
+			}
+			if (lastKey == "down" && map[player.xPos][player.yPos + 1] == 1) {
+				map[player.xPos][player.yPos + 1] = 4;
+			}
+			if (lastKey == "left" && map[player.xPos - 1][player.yPos] == 1) {
+				map[player.xPos - 1][player.yPos] = 4;
+			}
+			if (lastKey == "right" && map[player.xPos + 1][player.yPos] == 1) {
+				map[player.xPos + 1][player.yPos] = 4;
 			}
 		}
 		console.log(player.xPos);
@@ -124,6 +160,8 @@ $(document).ready(function() {
 		images[0].src = "assets/tree.png";
 		images.push(new Image(tileSize, tileSize));
 		images[1].src = "assets/rock.png";
+		images.push(new Image(tileSize, tileSize));
+		images[2].src = "assets/grassRock.png";
 	}
 
 	function initPlayer() {
@@ -155,8 +193,8 @@ $(document).ready(function() {
 		var currentX = startX;
 		var currentY = startY;
 		for (var i = startX; i < endX; i++) {
-			if (startY)
-			map[i][j] = 2;
+			// if (startY)
+			// map[i][j] = 2;
 		}
 	}
 
@@ -201,6 +239,7 @@ $(document).ready(function() {
 		}
 		//Draw the player
 		gameArea.drawImg(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize, player.getSprite());
+		gameArea.drawText("(1)Tree: 1", 0, 20);
 	}
 
 	function initMap() {
@@ -208,7 +247,11 @@ $(document).ready(function() {
 		for (var i = 0; i < mapSize;i++) {
 			map.push([]);
 			for (var j = 0; j < mapSize;j++) {
-				map[i].push(1);
+				if (randBounds(0,10) > 1) {
+					map[i].push(1);
+				} else {
+					map[i].push(6);
+				}
 			}
 		}
 		//Draw random squares on the map
