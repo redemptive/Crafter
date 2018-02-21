@@ -2,21 +2,41 @@ $(document).ready(function() {
 
 	const map = [];
 	const mapSize = 100;
-	const tileSize = 30;
+	const tileSize = 35;
 	const paused = false;
 	const viewHeight = 10;
 	const viewWidth = 10;
 	const playerImg = [];
 	var lastKey = "up";
+	var screen = 0;
 	const tiles = [
-		{color: "brown", canWalkOver: true},
-		{color: "green", canWalkOver: true},
-		{color: "blue", canWalkOver: true},
-		{color: "brown", canWalkOver: true},
-		{color: false, canWalkOver: false, asset: 0},
-		{color: false, canWalkOver: false, asset: 1},
-		{color: false, canWalkOver: true, asset: 2}
+		{name: "Dirt", color: "#A0522D", canWalkOver: true},
+		{name: "Grass", color: "green", canWalkOver: true},
+		{name: "Water", color: "blue", canWalkOver: true},
+		{name: "Dirt", color: "#A0522D", canWalkOver: true},
+		{name: "Tree", color: false, canWalkOver: false, asset: 0},
+		{name: "Rock", color: false, canWalkOver: false, asset: 1},
+		{name: "Grass Rock", color: false, canWalkOver: true, asset: 2}
 	];
+
+	class Inventory {
+		constructor() {
+			this.items = [];
+		}
+		addToInventory(itemNo) {
+			let index = this.items.map(function(e) { return e.item; }).indexOf(itemNo);
+			if (index == -1) {
+				this.items.push({item: itemNo, quantity: 1});
+			} else {
+				this.items[index] = {item: itemNo, quantity: this.items[index].quantity + 1};
+			}
+		}
+		getInventory() {
+			return this.items.map((element) => {return `${tiles[element.item].name}: ${element.quantity}\n`}).join(", ");
+		}
+	}
+
+	var inventory = new Inventory();
 
 	const player = {
 		xPos: 0,
@@ -41,7 +61,7 @@ $(document).ready(function() {
 	$(document).keydown(function(e) {
 		//Up
 		if (e.keyCode == 87 || e.keyCode == 38) {
-			if (player.yPos > 0) {
+			if (player.yPos > 0 && lastKey == "up") {
 				if (tiles[map[player.xPos][player.yPos - 1]].canWalkOver) {
 					player.yPos -= 1;
 				}
@@ -50,7 +70,7 @@ $(document).ready(function() {
 		} 
 		//Right
 		if (e.keyCode == 68 || e.keyCode == 39) {
-			if (player.xPos < mapSize - 1) {
+			if (player.xPos < mapSize - 1 && lastKey == "right") {
 				if (tiles[map[player.xPos + 1][player.yPos]].canWalkOver) {
 					player.xPos += 1;
 				}
@@ -59,7 +79,7 @@ $(document).ready(function() {
 		}
 		//Left
 		if (e.keyCode == 65 || e.keyCode == 37) {
-			if (player.xPos > 0) {
+			if (player.xPos > 0 && lastKey == "left") {
 				if (tiles[map[player.xPos - 1][player.yPos]].canWalkOver) {
 					player.xPos -= 1;
 				}
@@ -68,7 +88,7 @@ $(document).ready(function() {
 		}
 		//Down
 		if (e.keyCode == 83 || e.keyCode == 40) {
-			if (player.yPos < mapSize - 1) {
+			if (player.yPos < mapSize - 1 && lastKey == "down") {
 				if (tiles[map[player.xPos][player.yPos + 1]].canWalkOver) {
 					player.yPos += 1;
 				}
@@ -78,15 +98,19 @@ $(document).ready(function() {
 		//e
 		if (e.keyCode == 69) {
 			if (lastKey == "up") {
+				inventory.addToInventory(map[player.xPos][player.yPos - 1]);
 				map[player.xPos][player.yPos - 1] = 1;
 			}
 			if (lastKey == "down") {
+				inventory.addToInventory(map[player.xPos][player.yPos + 1]);
 				map[player.xPos][player.yPos + 1] = 1;
 			}
 			if (lastKey == "left") {
+				inventory.addToInventory(map[player.xPos - 1][player.yPos]);
 				map[player.xPos - 1][player.yPos] = 1;
 			}
 			if (lastKey == "right") {
+				inventory.addToInventory(map[player.xPos + 1][player.yPos]);
 				map[player.xPos + 1][player.yPos] = 1;
 			}
 		}
@@ -105,8 +129,14 @@ $(document).ready(function() {
 				map[player.xPos + 1][player.yPos] = 4;
 			}
 		}
-		console.log(player.xPos);
-		console.log(player.yPos);
+		if (e.keyCode == 73) {
+			if (screen == 0) {
+				screen = 1;
+			} else {
+				screen = 0;
+			}
+		}
+		console.log(`x:${player.xPos} y:${player.yPos}`);
 		console.log(map[player.xPos][player.yPos]);
 		console.log(tiles[map[player.xPos][player.yPos]]);
 	});
@@ -189,12 +219,12 @@ $(document).ready(function() {
 		}
 	}
 
-	function drawRiver(startX, startY, endX, endY) {
-		var currentX = startX;
+	function drawRiver(startX, startY, endX, endY, width) {
 		var currentY = startY;
 		for (var i = startX; i < endX; i++) {
-			// if (startY)
-			// map[i][j] = 2;
+			for (var j = i - width; j < i + width; i++) {
+				map[i][j] = 2;
+			}
 		}
 	}
 
@@ -239,7 +269,7 @@ $(document).ready(function() {
 		}
 		//Draw the player
 		gameArea.drawImg(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize, player.getSprite());
-		gameArea.drawText("(1)Tree: 1", 0, 20);
+		gameArea.drawText(inventory.getInventory(), 0, 20);
 	}
 
 	function initMap() {
@@ -264,9 +294,17 @@ $(document).ready(function() {
 		}
 	}
 
+	function inventoryScreen() {
+		gameArea.drawText(inventory.getInventory(), 0, 20);
+	}
+
 	function updateGameArea() {
 		gameArea.clear();
-		renderMap(player.xPos,player.yPos);
+		if (screen == 0) {
+			renderMap(player.xPos,player.yPos);
+		} else {
+			inventoryScreen();
+		}	
 	}
 
 	//Start the game
