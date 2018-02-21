@@ -38,11 +38,13 @@ $(document).ready(function() {
 
 	var inventory = new Inventory();
 
-	const player = {
-		xPos: 0,
-		yPos: 0,
-		color: "black",
-		getSprite: function() {
+	class Player {
+		constructor() {
+			this.xPos = 0;
+			this.yPos = 0;
+			this.color = "black";
+		}
+		getSprite() {
 			switch(map[this.xPos][this.yPos]) {
 				case 0:
 					return playerImg[2];
@@ -54,7 +56,9 @@ $(document).ready(function() {
 					return playerImg[0];
 			}
 		}
-	};
+	}
+
+	var player = new Player();
 
 	const images = [];
 	
