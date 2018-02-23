@@ -10,14 +10,50 @@ $(document).ready(function() {
 	var lastKey = "up";
 	var screen = 0;
 	const tiles = [
-		{name: "Dirt", color: "#A0522D", canWalkOver: true},
-		{name: "Grass", color: "green", canWalkOver: true},
-		{name: "Water", color: "blue", canWalkOver: true},
-		{name: "Dirt", color: "#A0522D", canWalkOver: true},
-		{name: "Tree", color: false, canWalkOver: false, asset: 0},
-		{name: "Rock", color: false, canWalkOver: false, asset: 1},
-		{name: "Grass Rock", color: false, canWalkOver: true, asset: 2}
+		{name: "Dirt", color: "#A0522D", canWalkOver: true, canCollect: false},
+		{name: "Grass", color: "green", canWalkOver: true, canCollect: false},
+		{name: "Water", color: "blue", canWalkOver: true, canCollect: false},
+		{name: "Dirt", color: "#A0522D", canWalkOver: true, canCollect: false},
+		{name: "Tree", color: false, canWalkOver: false, asset: 0, canCollect: true},
+		{name: "Rock", color: false, canWalkOver: false, asset: 1, canCollect: true},
+		{name: "Grass Rock", color: false, canWalkOver: true, asset: 2, canCollect: false}
 	];
+
+	class GameArea {
+		constructor() {
+			this.canvas = document.createElement("canvas"),
+			this.canvas.width = (viewWidth * 2) * tileSize;
+			this.canvas.height = (viewHeight * 2) * tileSize;
+			this.context = this.canvas.getContext("2d");
+			document.body.insertBefore(this.canvas,document.body.childNodes[0]);
+			this.interval = setInterval(updateGameArea, 20);
+		}
+		clear() {
+			//Clear the canvas to avoid drawing over the last frame
+			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+			this.draw(this.canvas.height,this.canvas.width,0,0,"white");
+		}
+		draw(height, width, x, y, color, rotation = 0) {
+			//Draw function with rotation if provided
+			this.context.save();
+			this.context.fillStyle = color;
+			this.context.translate(x,y);
+			this.context.rotate(rotation);
+			this.context.fillRect(0, 0, width, height);
+			this.context.restore();
+		}
+		drawText(theString, x, y, size = 16) {
+			//Draw function for text
+			this.context.save();
+			this.context.font = `${size}px Verdana`;
+			this.context.fillText(theString, x, y);
+			this.context.restore();
+		}
+		drawImg(width, height, x, y, image) {
+			//Draw an image with the given parameters
+			this.context.drawImage(image, x, y, width, height);
+		}
+	}
 
 	class Inventory {
 		constructor() {
@@ -34,9 +70,10 @@ $(document).ready(function() {
 		getInventory() {
 			return this.items.map((element) => {return `${tiles[element.item].name}: ${element.quantity}\n`}).join(", ");
 		}
+		getInventoryTileArray() {
+			return this.items.map((element) => {return element.item});
+		}
 	}
-
-	var inventory = new Inventory();
 
 	class Player {
 		constructor() {
@@ -47,7 +84,7 @@ $(document).ready(function() {
 		getSprite() {
 			switch(map[this.xPos][this.yPos]) {
 				case 0:
-					return playerImg[2];
+					return playerImg[0];
 					break;
 				case 2:
 					return playerImg[1];
@@ -57,7 +94,8 @@ $(document).ready(function() {
 			}
 		}
 	}
-
+	
+	var inventory = new Inventory();
 	var player = new Player();
 
 	const images = [];
@@ -101,36 +139,36 @@ $(document).ready(function() {
 		}
 		//e
 		if (e.keyCode == 69) {
-			if (lastKey == "up") {
+			if (lastKey == "up" && tiles[map[player.xPos][player.yPos - 1]].canCollect) {
 				inventory.addToInventory(map[player.xPos][player.yPos - 1]);
 				map[player.xPos][player.yPos - 1] = 1;
 			}
-			if (lastKey == "down") {
+			if (lastKey == "down" && tiles[map[player.xPos][player.yPos + 1]].canCollect) {
 				inventory.addToInventory(map[player.xPos][player.yPos + 1]);
 				map[player.xPos][player.yPos + 1] = 1;
 			}
-			if (lastKey == "left") {
+			if (lastKey == "left" && tiles[map[player.xPos - 1][player.yPos]].canCollect) {
 				inventory.addToInventory(map[player.xPos - 1][player.yPos]);
 				map[player.xPos - 1][player.yPos] = 1;
 			}
-			if (lastKey == "right") {
+			if (lastKey == "right" && tiles[map[player.xPos + 1][player.yPos]].canCollect) {
 				inventory.addToInventory(map[player.xPos + 1][player.yPos]);
 				map[player.xPos + 1][player.yPos] = 1;
 			}
 		}
 		//1
-		if (e.keyCode == 49) {
+		if (e.keyCode > 48 && e.keyCode < 58 && e.keyCode - 48 <= inventory.items.length) {
 			if (lastKey == "up" && map[player.xPos][player.yPos - 1] == 1) {
-				map[player.xPos][player.yPos - 1] = 4;
+				map[player.xPos][player.yPos - 1] = inventory.getInventoryTileArray()[e.keyCode - 49];
 			}
 			if (lastKey == "down" && map[player.xPos][player.yPos + 1] == 1) {
-				map[player.xPos][player.yPos + 1] = 4;
+				map[player.xPos][player.yPos + 1] = inventory.getInventoryTileArray()[e.keyCode - 49];
 			}
 			if (lastKey == "left" && map[player.xPos - 1][player.yPos] == 1) {
-				map[player.xPos - 1][player.yPos] = 4;
+				map[player.xPos - 1][player.yPos] = inventory.getInventoryTileArray()[e.keyCode - 49];
 			}
 			if (lastKey == "right" && map[player.xPos + 1][player.yPos] == 1) {
-				map[player.xPos + 1][player.yPos] = 4;
+				map[player.xPos + 1][player.yPos] = inventory.getInventoryTileArray()[e.keyCode - 49];
 			}
 		}
 		if (e.keyCode == 73) {
@@ -144,43 +182,6 @@ $(document).ready(function() {
 		console.log(map[player.xPos][player.yPos]);
 		console.log(tiles[map[player.xPos][player.yPos]]);
 	});
-
-	const gameArea = {
-		canvas : document.createElement("canvas"),
-		start : function () {
-			//Initiate the game area
-			this.canvas.width = (viewWidth * 2) * tileSize;
-			this.canvas.height = (viewHeight * 2) * tileSize;
-			this.context = this.canvas.getContext("2d");
-			document.body.insertBefore(this.canvas,document.body.childNodes[0]);
-			this.interval = setInterval(updateGameArea, 20);
-		},
-		clear : function () {
-			//Clear the canvas to avoid drawing over the last frame
-			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.draw(this.canvas.height,this.canvas.width,0,0,"white");
-		},
-		draw : function (height,width,x,y,color,rotation = 0) {
-			//Draw function with rotation if provided
-			this.context.save();
-			this.context.fillStyle = color;
-			this.context.translate(x,y);
-			this.context.rotate(rotation);
-			this.context.fillRect(0, 0, width, height);
-			this.context.restore();
-		},
-		drawText : function (theString, x, y, size = 16) {
-			//Draw function for text
-			this.context.save();
-			this.context.font = size + "px Verdana";
-			this.context.fillText(theString, x, y);
-			this.context.restore();
-		},
-		drawImg : function (width, height, x, y, image) {
-			//Draw an image with the given parameters
-			this.context.drawImage(image, x, y, width, height);
-		}
-	};
 
 	function getAssets() {
 		//Get all the images from the assets folder
@@ -312,7 +313,7 @@ $(document).ready(function() {
 	}
 
 	//Start the game
-	gameArea.start();
+	let gameArea = new GameArea();
 	getAssets();
 	startGame();
 });
