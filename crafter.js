@@ -67,6 +67,20 @@ $(document).ready(function() {
 				this.items[index] = {item: itemNo, quantity: this.items[index].quantity + 1};
 			}
 		}
+		removeFromInventory(itemNo) {
+			let index = this.items.map(function(e) { return e.item; }).indexOf(itemNo);
+			if (index != -1) {
+				this.items[index] = {item: itemNo, quantity: this.items[index].quantity - 1};
+			}
+		}
+		getQuantityByItemNo(itemNo) {
+			let index = this.items.map(function(e) { return e.item; }).indexOf(itemNo);
+			if (index != -1) {
+				return this.items[index].quantity;
+			} else {
+				return -1;
+			}
+		}
 		getInventory() {
 			return this.items.map((element) => {return `${tiles[element.item].name}: ${element.quantity}\n`}).join(", ");
 		}
@@ -77,8 +91,8 @@ $(document).ready(function() {
 
 	class Player {
 		constructor() {
-			this.xPos = 0;
-			this.yPos = 0;
+			this.xPos = randBounds(0,mapSize);
+			this.yPos = randBounds(0,mapSize);
 			this.color = "black";
 		}
 		getSprite() {
@@ -156,19 +170,32 @@ $(document).ready(function() {
 				map[player.xPos + 1][player.yPos] = 1;
 			}
 		}
-		//1
+		//1 - 9
 		if (e.keyCode > 48 && e.keyCode < 58 && e.keyCode - 48 <= inventory.items.length) {
 			if (lastKey == "up" && map[player.xPos][player.yPos - 1] == 1) {
-				map[player.xPos][player.yPos - 1] = inventory.getInventoryTileArray()[e.keyCode - 49];
+				if (inventory.getQuantityByItemNo(map[player.xPos][player.yPos - 1]) > 0) {
+					map[player.xPos][player.yPos - 1] = inventory.getInventoryTileArray()[e.keyCode - 49];
+					inventory.removeFromInventory(map[player.xPos][player.yPos - 1]);
+				}
 			}
 			if (lastKey == "down" && map[player.xPos][player.yPos + 1] == 1) {
-				map[player.xPos][player.yPos + 1] = inventory.getInventoryTileArray()[e.keyCode - 49];
+				console.log(inventory.getQuantityByItemNo(map[player.xPos][player.yPos + 1]) > 0);
+				if (inventory.getQuantityByItemNo(map[player.xPos][player.yPos + 1]) > 0) {
+					map[player.xPos][player.yPos + 1] = inventory.getInventoryTileArray()[e.keyCode - 49];
+					inventory.removeFromInventory(map[player.xPos][player.yPos + 1]);
+				}
 			}
 			if (lastKey == "left" && map[player.xPos - 1][player.yPos] == 1) {
-				map[player.xPos - 1][player.yPos] = inventory.getInventoryTileArray()[e.keyCode - 49];
+				if (inventory.getQuantityByItemNo(map[player.xPos - 1][player.yPos]) > 0) {
+					map[player.xPos - 1][player.yPos] = inventory.getInventoryTileArray()[e.keyCode - 49];
+					inventory.removeFromInventory(map[player.xPos - 1][player.yPos]);
+				}
 			}
 			if (lastKey == "right" && map[player.xPos + 1][player.yPos] == 1) {
-				map[player.xPos + 1][player.yPos] = inventory.getInventoryTileArray()[e.keyCode - 49];
+				if (inventory.getQuantityByItemNo(map[player.xPos + 1][player.yPos]) > 0) {
+					map[player.xPos + 1][player.yPos] = inventory.getInventoryTileArray()[e.keyCode - 49];
+					inventory.removeFromInventory(map[player.xPos + 1][player.yPos]);
+				}
 			}
 		}
 		if (e.keyCode == 73) {
@@ -199,12 +226,6 @@ $(document).ready(function() {
 		images[2].src = "assets/grassRock.png";
 	}
 
-	function initPlayer() {
-		//Give the player a random position when the game starts and the function is called
-		player.xPos = randBounds(0,mapSize);
-		player.yPos = randBounds(0,mapSize);
-	}
-
 	function randBounds(min, max) {
 		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
@@ -212,7 +233,6 @@ $(document).ready(function() {
 		
 	function startGame() {
 		initMap();
-		initPlayer();
 	}
 
 	function drawMapSquare(x, y, radius, tile) {
@@ -290,7 +310,7 @@ $(document).ready(function() {
 			}
 		}
 		//Draw random squares on the map
-		for (var i = 0; i < randBounds(10,15); i++) {
+		for (var i = 0; i < randBounds(15,20); i++) {
 			drawMapSquare(randBounds(5,mapSize - 6),randBounds(5,mapSize - 6),randBounds(2,5),randBounds(0,tiles.length));
 		}
 		//Draw random lines on the map
