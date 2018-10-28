@@ -5,7 +5,6 @@ $(document).ready(function() {
 	const tileSize = 30;
 	const viewHeight = 10;
 	const viewWidth = 10;
-	const playerImg = [];
 	var lastKey = "up";
 	const tiles = [
 		{color: "brown", canWalkOver: true},
@@ -22,18 +21,24 @@ $(document).ready(function() {
 			this.xPos = randBounds(0,mapSize);
 			this.yPos = randBounds(0,mapSize);
 			this.color = "black";
+			this.sprites = [];
+		}
+
+		addSprite(image, size) {
+			this.sprites.push(new Image(size, size));
+			this.sprites[this.sprites.length - 1].src = image;
 		}
 
 		getSprite() {
 			switch(map[this.xPos][this.yPos]) {
 				case 0:
-					return playerImg[2];
+					return this.sprites[2];
 					break;
 				case 2:
-					return playerImg[1];
+					return this.sprites[1];
 					break;
 				default:
-					return playerImg[0];
+					return this.sprites[0];
 			}
 		}
 	}
@@ -153,12 +158,9 @@ $(document).ready(function() {
 
 	function getAssets() {
 		//Get all the images from the assets folder
-		playerImg.push(new Image(tileSize, tileSize));
-		playerImg[0].src = "assets/player.png";
-		playerImg.push(new Image(tileSize, tileSize));
-		playerImg[1].src = "assets/playerWater.png";
-		playerImg.push(new Image(tileSize, tileSize));
-		playerImg[2].src = "assets/playerDirt.png";
+		player.addSprite("assets/player.png", tileSize);
+		player.addSprite("assets/playerWater.png", tileSize);
+		player.addSprite("assets/playerDirt.png", tileSize);
 		images.push(new Image(tileSize, tileSize));
 		images[0].src = "assets/tree.png";
 		images.push(new Image(tileSize, tileSize));
