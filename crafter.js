@@ -3,7 +3,6 @@ $(document).ready(function() {
 	const map = [];
 	const mapSize = 100;
 	const tileSize = 30;
-	const paused = false;
 	const viewHeight = 10;
 	const viewWidth = 10;
 	const playerImg = [];
@@ -18,11 +17,14 @@ $(document).ready(function() {
 		{color: false, canWalkOver: true, asset: 2}
 	];
 
-	const player = {
-		xPos: 0,
-		yPos: 0,
-		color: "black",
-		getSprite: function() {
+	class Player {
+		constructor() {
+			this.xPos = 0;
+			this.yPos = 0;
+			this.color = "black";
+		}
+
+		getSprite() {
 			switch(map[this.xPos][this.yPos]) {
 				case 0:
 					return playerImg[2];
@@ -34,7 +36,9 @@ $(document).ready(function() {
 					return playerImg[0];
 			}
 		}
-	};
+	}
+
+	const player = new Player();
 
 	const images = [];
 	
