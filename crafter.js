@@ -171,10 +171,6 @@ $(document).ready(function() {
 		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
 	}
-		
-	function startGame() {
-		initMap();
-	}
 
 	function drawMapSquare(x, y, radius, tile) {
 		//draw a square to the map at x and y with tile and a radius
@@ -182,15 +178,6 @@ $(document).ready(function() {
 			for (var j = y - radius; j < y + radius; j++) {
 				map[i][j] = tile;
 			}
-		}
-	}
-
-	function drawRiver(startX, startY, endX, endY) {
-		var currentX = startX;
-		var currentY = startY;
-		for (var i = startX; i < endX; i++) {
-			// if (startY)
-			// map[i][j] = 2;
 		}
 	}
 
@@ -268,5 +255,5 @@ $(document).ready(function() {
 	//Start the game
 	gameArea.start();
 	getAssets();
-	startGame();
+	initMap();
 });
