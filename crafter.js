@@ -19,8 +19,8 @@ $(document).ready(function() {
 
 	class Player {
 		constructor() {
-			this.xPos = 0;
-			this.yPos = 0;
+			this.xPos = randBounds(0,mapSize);
+			this.yPos = randBounds(0,mapSize);
 			this.color = "black";
 		}
 
@@ -37,7 +37,6 @@ $(document).ready(function() {
 			}
 		}
 	}
-
 	const player = new Player();
 
 	const images = [];
@@ -168,12 +167,6 @@ $(document).ready(function() {
 		images[2].src = "assets/grassRock.png";
 	}
 
-	function initPlayer() {
-		//Give the player a random position when the game starts and the function is called
-		player.xPos = randBounds(0,mapSize);
-		player.yPos = randBounds(0,mapSize);
-	}
-
 	function randBounds(min, max) {
 		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
@@ -181,7 +174,6 @@ $(document).ready(function() {
 		
 	function startGame() {
 		initMap();
-		initPlayer();
 	}
 
 	function drawMapSquare(x, y, radius, tile) {
