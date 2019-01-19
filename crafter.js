@@ -16,11 +16,17 @@ $(document).ready(function() {
 		{color: false, canWalkOver: true, asset: 2}
 	];
 
-	class Player {
+	class GameObject {
+		constructor(x, y, color) {
+			this.x = x;
+			this.y = y;
+			this.color = color;
+		}
+	}
+
+	class Player extends GameObject {
 		constructor() {
-			this.xPos = randBounds(0,mapSize);
-			this.yPos = randBounds(0,mapSize);
-			this.color = "black";
+			super(randBounds(0,mapSize), randBounds(0,mapSize), "black")
 			this.sprites = [];
 		}
 
@@ -30,13 +36,11 @@ $(document).ready(function() {
 		}
 
 		getSprite() {
-			switch(map[this.xPos][this.yPos]) {
+			switch(map[this.x][this.y]) {
 				case 0:
 					return this.sprites[2];
-					break;
 				case 2:
 					return this.sprites[1];
-					break;
 				default:
 					return this.sprites[0];
 			}
@@ -49,36 +53,36 @@ $(document).ready(function() {
 	$(document).keydown(function(e) {
 		//Up
 		if (e.keyCode == 87 || e.keyCode == 38) {
-			if (player.yPos > 0) {
-				if (tiles[map[player.xPos][player.yPos - 1]].canWalkOver) {
-					player.yPos -= 1;
+			if (player.y > 0) {
+				if (tiles[map[player.x][player.y - 1]].canWalkOver) {
+					player.y -= 1;
 				}
 			}
 			lastKey = "up";
 		} 
 		//Right
 		if (e.keyCode == 68 || e.keyCode == 39) {
-			if (player.xPos < mapSize - 1) {
-				if (tiles[map[player.xPos + 1][player.yPos]].canWalkOver) {
-					player.xPos += 1;
+			if (player.x < mapSize - 1) {
+				if (tiles[map[player.x + 1][player.y]].canWalkOver) {
+					player.x += 1;
 				}
 			}
 			lastKey = "right";
 		}
 		//Left
 		if (e.keyCode == 65 || e.keyCode == 37) {
-			if (player.xPos > 0) {
-				if (tiles[map[player.xPos - 1][player.yPos]].canWalkOver) {
-					player.xPos -= 1;
+			if (player.x > 0) {
+				if (tiles[map[player.x - 1][player.y]].canWalkOver) {
+					player.x -= 1;
 				}
 			}
 			lastKey = "left";
 		}
 		//Down
 		if (e.keyCode == 83 || e.keyCode == 40) {
-			if (player.yPos < mapSize - 1) {
-				if (tiles[map[player.xPos][player.yPos + 1]].canWalkOver) {
-					player.yPos += 1;
+			if (player.y < mapSize - 1) {
+				if (tiles[map[player.x][player.y + 1]].canWalkOver) {
+					player.y += 1;
 				}
 			}
 			lastKey = "down";
@@ -86,37 +90,37 @@ $(document).ready(function() {
 		//e
 		if (e.keyCode == 69) {
 			if (lastKey == "up") {
-				map[player.xPos][player.yPos - 1] = 1;
+				map[player.x][player.y - 1] = 1;
 			}
 			if (lastKey == "down") {
-				map[player.xPos][player.yPos + 1] = 1;
+				map[player.x][player.y + 1] = 1;
 			}
 			if (lastKey == "left") {
-				map[player.xPos - 1][player.yPos] = 1;
+				map[player.x - 1][player.y] = 1;
 			}
 			if (lastKey == "right") {
-				map[player.xPos + 1][player.yPos] = 1;
+				map[player.x + 1][player.y] = 1;
 			}
 		}
 		//1
 		if (e.keyCode == 49) {
-			if (lastKey == "up" && map[player.xPos][player.yPos - 1] == 1) {
-				map[player.xPos][player.yPos - 1] = 4;
+			if (lastKey == "up" && map[player.x][player.y - 1] == 1) {
+				map[player.x][player.y - 1] = 4;
 			}
-			if (lastKey == "down" && map[player.xPos][player.yPos + 1] == 1) {
-				map[player.xPos][player.yPos + 1] = 4;
+			if (lastKey == "down" && map[player.x][player.y + 1] == 1) {
+				map[player.x][player.y + 1] = 4;
 			}
-			if (lastKey == "left" && map[player.xPos - 1][player.yPos] == 1) {
-				map[player.xPos - 1][player.yPos] = 4;
+			if (lastKey == "left" && map[player.x - 1][player.y] == 1) {
+				map[player.x - 1][player.y] = 4;
 			}
-			if (lastKey == "right" && map[player.xPos + 1][player.yPos] == 1) {
-				map[player.xPos + 1][player.yPos] = 4;
+			if (lastKey == "right" && map[player.x + 1][player.y] == 1) {
+				map[player.x + 1][player.y] = 4;
 			}
 		}
-		console.log(player.xPos);
-		console.log(player.yPos);
-		console.log(map[player.xPos][player.yPos]);
-		console.log(tiles[map[player.xPos][player.yPos]]);
+		console.log(player.x);
+		console.log(player.y);
+		console.log(map[player.x][player.y]);
+		console.log(tiles[map[player.x][player.y]]);
 	});
 
 	const gameArea = {
@@ -223,7 +227,7 @@ $(document).ready(function() {
 			}
 		}
 		//Draw the player
-		gameArea.drawImg(tileSize, tileSize, (player.xPos - (centerX - viewWidth)) * tileSize, (player.yPos - (centerY - viewWidth)) * tileSize, player.getSprite());
+		gameArea.drawImg(tileSize, tileSize, (player.x - (centerX - viewWidth)) * tileSize, (player.y - (centerY - viewWidth)) * tileSize, player.getSprite());
 		gameArea.drawText("(1)Tree: 1", 0, 20);
 	}
 
@@ -251,7 +255,7 @@ $(document).ready(function() {
 
 	function updateGameArea() {
 		gameArea.clear();
-		renderMap(player.xPos,player.yPos);
+		renderMap(player.x,player.y);
 	}
 
 	//Start the game
