@@ -8,10 +8,11 @@ $(document).ready(function() {
 	var lastKey = "up";
 
 	class MapTile {
-		constructor (color, canWalkOver, asset = null) {
+		constructor (color, canWalkOver, sprite) {
 			this.color = color;
 			this.canWalkOver = canWalkOver;
-			this.asset = asset;
+			this.sprite = new Image(tileSize, tileSize);
+			this.sprite.src = sprite;
 		}
 	}
 
@@ -20,9 +21,9 @@ $(document).ready(function() {
 		new MapTile("green", true),
 		new MapTile("blue", true),
 		new MapTile("brown", true),
-		new MapTile(false, true, 0),
-		new MapTile(false, false, 1),
-		new MapTile(false, true, 2)
+		new MapTile(false, true, "assets/tree.png"),
+		new MapTile(false, false, "assets/rock.png"),
+		new MapTile(false, true, "assets/grassRock.png")
 	];
 
 	class GameObject {
@@ -59,8 +60,6 @@ $(document).ready(function() {
 		}
 	}
 	const player = new Player();
-
-	const images = [];
 	
 	$(document).keydown(function(e) {
 		//Up
@@ -162,17 +161,6 @@ $(document).ready(function() {
 
 	const game = new Game();
 
-
-	function getAssets() {
-		//Get all the images from the assets folder
-		images.push(new Image(tileSize, tileSize));
-		images[0].src = "assets/tree.png";
-		images.push(new Image(tileSize, tileSize));
-		images[1].src = "assets/rock.png";
-		images.push(new Image(tileSize, tileSize));
-		images[2].src = "assets/grassRock.png";
-	}
-
 	function randBounds(min, max) {
 		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
@@ -222,7 +210,7 @@ $(document).ready(function() {
 					game.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
 				} else {
 					//If the tile is an image asset draw with draw image
-					game.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, images[tiles[map[i][j]].asset]);
+					game.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, tiles[map[i][j]].sprite);
 				}
 			}
 		}
@@ -259,6 +247,5 @@ $(document).ready(function() {
 	}
 
 	//Start the game
-	getAssets();
 	initMap();
 });
