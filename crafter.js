@@ -35,8 +35,11 @@ $(document).ready(function() {
 
 	class Player extends GameObject {
 		constructor() {
-			super(randBounds(0,mapSize), randBounds(0,mapSize), "black")
+			super(randBounds(0, mapSize), randBounds(0, mapSize), "black");
 			this.sprites = [];
+			this.addSprite("assets/player.png", tileSize);
+			this.addSprite("assets/playerWater.png", tileSize);
+			this.addSprite("assets/playerDirt.png", tileSize);
 		}
 
 		addSprite(image, size) {
@@ -91,18 +94,10 @@ $(document).ready(function() {
 		}
 		//e (Action key)
 		if (e.keyCode == 69) {
-			if (lastKey == "up") {
-				map[player.x][player.y - 1] = 1;
-			}
-			if (lastKey == "down") {
-				map[player.x][player.y + 1] = 1;
-			}
-			if (lastKey == "left") {
-				map[player.x - 1][player.y] = 1;
-			}
-			if (lastKey == "right") {
-				map[player.x + 1][player.y] = 1;
-			}
+			lastKey === "up" ? map[player.x][player.y - 1] = 1 :
+			lastKey == "down" ? map[player.x][player.y + 1] = 1 :
+			lastKey == "left" ? map[player.x - 1][player.y] = 1 :
+			map[player.x + 1][player.y] = 1;
 		}
 		//1
 		if (e.keyCode == 49) {
@@ -125,48 +120,51 @@ $(document).ready(function() {
 		console.log(tiles[map[player.x][player.y]]);
 	});
 
-	const gameArea = {
-		canvas : document.createElement("canvas"),
-		start : function () {
-			//Initiate the game area
+	class Game {
+		constructor() {
+			this.canvas = document.createElement("canvas"),
 			this.canvas.width = (viewWidth * 2) * tileSize;
 			this.canvas.height = (viewHeight * 2) * tileSize;
 			this.context = this.canvas.getContext("2d");
-			document.body.insertBefore(this.canvas,document.body.childNodes[0]);
+			document.body.insertBefore(this.canvas, document.body.childNodes[0]);
 			this.interval = setInterval(updateGameArea, 20);
-		},
-		clear : function () {
+		}
+
+		clear() {
 			//Clear the canvas to avoid drawing over the last frame
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 			this.draw(this.canvas.height,this.canvas.width,0,0,"white");
-		},
-		draw : function (height,width,x,y,color,rotation = 0) {
+		}
+
+		draw(height, width, x , y, color) {
 			//Draw function with rotation if provided
 			this.context.save();
 			this.context.fillStyle = color;
 			this.context.translate(x,y);
-			this.context.rotate(rotation);
+			this.context.rotate(0);
 			this.context.fillRect(0, 0, width, height);
 			this.context.restore();
-		},
-		drawText : function (theString, x, y, size = 16) {
+		}
+
+		drawText(theString, x, y) {
 			//Draw function for text
 			this.context.save();
-			this.context.font = size + "px Verdana";
+			this.context.font = "16px Verdana";
 			this.context.fillText(theString, x, y);
 			this.context.restore();
-		},
-		drawImg : function (width, height, x, y, image) {
+		}
+
+		drawImg(width, height, x, y, image) {
 			//Draw an image with the given parameters
 			this.context.drawImage(image, x, y, width, height);
 		}
-	};
+	}
+
+	const game = new Game();
+
 
 	function getAssets() {
 		//Get all the images from the assets folder
-		player.addSprite("assets/player.png", tileSize);
-		player.addSprite("assets/playerWater.png", tileSize);
-		player.addSprite("assets/playerDirt.png", tileSize);
 		images.push(new Image(tileSize, tileSize));
 		images[0].src = "assets/tree.png";
 		images.push(new Image(tileSize, tileSize));
@@ -221,16 +219,16 @@ $(document).ready(function() {
 			for (var j = centerY - viewHeight; j < centerY + viewHeight;j++) {
 				//if the tile is a plain colour tile
 				if (tiles[map[i][j]].color != false) {
-					gameArea.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
+					game.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[map[i][j]].color);
 				} else {
 					//If the tile is an image asset draw with draw image
-					gameArea.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, images[tiles[map[i][j]].asset]);
+					game.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, images[tiles[map[i][j]].asset]);
 				}
 			}
 		}
 		//Draw the player
-		gameArea.drawImg(tileSize, tileSize, (player.x - (centerX - viewWidth)) * tileSize, (player.y - (centerY - viewWidth)) * tileSize, player.getSprite());
-		gameArea.drawText("(1)Tree: 1", 0, 20);
+		game.drawImg(tileSize, tileSize, (player.x - (centerX - viewWidth)) * tileSize, (player.y - (centerY - viewWidth)) * tileSize, player.getSprite());
+		game.drawText("(1)Tree: 1", 0, 20);
 	}
 
 	function initMap() {
@@ -256,12 +254,11 @@ $(document).ready(function() {
 	}
 
 	function updateGameArea() {
-		gameArea.clear();
-		renderMap(player.x,player.y);
+		game.clear();
+		renderMap(player.x, player.y);
 	}
 
 	//Start the game
-	gameArea.start();
 	getAssets();
 	initMap();
 });
