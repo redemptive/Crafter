@@ -6,14 +6,23 @@ $(document).ready(function() {
 	const viewHeight = 10;
 	const viewWidth = 10;
 	var lastKey = "up";
+
+	class MapTile {
+		constructor (color, canWalkOver, asset = null) {
+			this.color = color;
+			this.canWalkOver = canWalkOver;
+			this.asset = asset;
+		}
+	}
+
 	const tiles = [
-		{color: "brown", canWalkOver: true},
-		{color: "green", canWalkOver: true},
-		{color: "blue", canWalkOver: true},
-		{color: "brown", canWalkOver: true},
-		{color: false, canWalkOver: false, asset: 0},
-		{color: false, canWalkOver: false, asset: 1},
-		{color: false, canWalkOver: true, asset: 2}
+		new MapTile("brown", true),
+		new MapTile("green", true),
+		new MapTile("blue", true),
+		new MapTile("brown", true),
+		new MapTile(false, true, 0),
+		new MapTile(false, false, 1),
+		new MapTile(false, true, 2)
 	];
 
 	class GameObject {
@@ -52,42 +61,35 @@ $(document).ready(function() {
 	
 	$(document).keydown(function(e) {
 		//Up
+		// Inner if statment checks player is in bounds and the next tile can be walked over
 		if (e.keyCode == 87 || e.keyCode == 38) {
-			if (player.y > 0) {
-				if (tiles[map[player.x][player.y - 1]].canWalkOver) {
-					player.y -= 1;
-				}
+			if ((player.y > 0) && (tiles[map[player.x][player.y - 1]].canWalkOver)) {
+				player.y -= 1;
 			}
 			lastKey = "up";
 		} 
 		//Right
 		if (e.keyCode == 68 || e.keyCode == 39) {
-			if (player.x < mapSize - 1) {
-				if (tiles[map[player.x + 1][player.y]].canWalkOver) {
-					player.x += 1;
-				}
+			if ((player.x < mapSize - 1) && (tiles[map[player.x + 1][player.y]].canWalkOver)) {
+				player.x += 1;
 			}
 			lastKey = "right";
 		}
 		//Left
 		if (e.keyCode == 65 || e.keyCode == 37) {
-			if (player.x > 0) {
-				if (tiles[map[player.x - 1][player.y]].canWalkOver) {
-					player.x -= 1;
-				}
+			if ((player.x > 0) && (tiles[map[player.x - 1][player.y]].canWalkOver)) {
+				player.x -= 1;
 			}
 			lastKey = "left";
 		}
 		//Down
 		if (e.keyCode == 83 || e.keyCode == 40) {
-			if (player.y < mapSize - 1) {
-				if (tiles[map[player.x][player.y + 1]].canWalkOver) {
-					player.y += 1;
-				}
+			if ((player.y < mapSize - 1) && (tiles[map[player.x][player.y + 1]].canWalkOver)) {
+				player.y += 1;
 			}
 			lastKey = "down";
 		}
-		//e
+		//e (Action key)
 		if (e.keyCode == 69) {
 			if (lastKey == "up") {
 				map[player.x][player.y - 1] = 1;
