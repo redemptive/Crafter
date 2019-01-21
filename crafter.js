@@ -252,6 +252,10 @@ window.onload = function() {
 		return Math.floor((Math.random() * max) + min);
 	}
 
+	function inventoryScreen() {
+		gameArea.drawText(inventory.getInventory(), 0, 20);
+	}
+
 	function updateGameArea() {
 		game.clear();
 		map.render(player.x, player.y);
