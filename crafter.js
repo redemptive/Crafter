@@ -1,5 +1,4 @@
-$(document).ready(function() {
-
+window.onload = function() {
 	
 	const mapSize = 100;
 	const tileSize = 30;
@@ -56,7 +55,9 @@ $(document).ready(function() {
 			//draw a square to the map at x and y with tile and a radius
 			for (let i = x - radius; i < x + radius; i++) {
 				for (let j = y - radius; j < y + radius; j++) {
-					this.tileGrid[i][j] = tile;
+					if ((i < mapSize) && (j < mapSize) && (i >= 0) && (j >= 0)) {
+						this.tileGrid[i][j] = tile;
+					}
 				}
 			}
 		}
@@ -145,7 +146,8 @@ $(document).ready(function() {
 
 	const player = new Player();
 	
-	$(document).keydown(function(e) {
+	//$(document).keydown(function(e) {
+	document.addEventListener('keydown', function() {
 		//Up
 		// Inner if statment checks player is in bounds and the next tile can be walked over
 		if (e.keyCode == 87 || e.keyCode == 38) {
@@ -254,4 +256,4 @@ $(document).ready(function() {
 		game.clear();
 		map.render(player.x, player.y);
 	}
-});
+};
