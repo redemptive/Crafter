@@ -147,7 +147,7 @@ window.onload = function() {
 	const player = new Player();
 	
 	//$(document).keydown(function(e) {
-	document.addEventListener('keydown', function() {
+	document.addEventListener('keydown', function(e) {
 		//Up
 		// Inner if statment checks player is in bounds and the next tile can be walked over
 		if (e.keyCode == 87 || e.keyCode == 38) {
@@ -250,10 +250,6 @@ window.onload = function() {
 	function randBounds(min, max) {
 		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
-	}
-
-	function inventoryScreen() {
-		gameArea.drawText(inventory.getInventory(), 0, 20);
 	}
 
 	function updateGameArea() {
