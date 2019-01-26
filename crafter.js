@@ -1,28 +1,39 @@
 window.onload = function() {
 	
+	// Cross browser screen size
+	const screenWidth = window.innerWidth
+		|| document.documentElement.clientWidth
+		|| document.body.clientWidth;
+
+	const screenHeight = window.innerHeight
+		|| document.documentElement.clientHeight
+		|| document.body.clientHeight;
+
+	
 	const mapSize = 100;
-	const tileSize = 30;
-	const viewHeight = 10;
-	const viewWidth = 10;
+	const viewHeight = 6;
+	const viewWidth = 8;
+	const tileWidth = screenWidth / (1 + (viewWidth * 2));
+	const tileHeight = screenHeight / (1 + (viewHeight * 2));
 	let lastKey = "up";
 
 	class Tile {
-		constructor (color, canWalkOver, sprite) {
-			this.color = color;
+		constructor (name, canWalkOver, sprite) {
+			this.name = name;
 			this.canWalkOver = canWalkOver;
-			this.sprite = new Image(tileSize, tileSize);
+			this.sprite = new Image(tileWidth, tileHeight);
 			this.sprite.src = sprite;
 		}
 	}
 
 	const tiles = [
-		new Tile("brown", true),
-		new Tile("green", true),
-		new Tile("blue", true),
-		new Tile("brown", true),
-		new Tile(false, false, "assets/tree.png"),
-		new Tile(false, false, "assets/rock.png"),
-		new Tile(false, true, "assets/grassRock.png")
+		new Tile("dirt", true, "assets/dirt.png"),
+		new Tile("grass", true, "assets/grass.png"),
+		new Tile("water", true, "assets/water.png"),
+		new Tile("dirt", true, "assets/dirt.png"),
+		new Tile("tree", false, "assets/tree.png"),
+		new Tile("rock", false, "assets/rock.png"),
+		new Tile("grassRock", true, "assets/grassRock.png")
 	];
 
 	class Map {
@@ -91,19 +102,21 @@ window.onload = function() {
 			} else if (centerY - viewHeight < 0) {
 				centerY = viewHeight;
 			}
-			for (let i = centerX - viewWidth; i < centerX + viewWidth;i++) {
-				for (let j = centerY - viewHeight; j < centerY + viewHeight;j++) {
+
+			// Loop through the 2d tile grid and draw all the tile sprites
+			for (let i = centerX - viewWidth; i < centerX + viewWidth; i++) {
+				for (let j = centerY - viewHeight; j < centerY + viewHeight; j++) {
 					//if the tile is a plain colour tile
 					if (tiles[this.tileGrid[i][j]].color) {
-						game.draw(tileSize,tileSize,(i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize,tiles[this.tileGrid[i][j]].color);
+						game.draw(tileWidth, tileHeight, (i - (centerX - viewWidth)) * tileWidth, (j - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[i][j]].color);
 					} else {
 						//If the tile is an image asset draw with draw image
-						game.drawImg(tileSize, tileSize, (i - (centerX - viewWidth))*tileSize,(j - (centerY - viewHeight))*tileSize, tiles[this.tileGrid[i][j]].sprite);
+						game.drawImg(tileWidth, tileHeight, (i - (centerX - viewWidth)) * tileWidth, (j - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[i][j]].sprite);
 					}
 				}
 			}
 			//Draw the player
-			game.drawImg(tileSize, tileSize, (player.x - (centerX - viewWidth)) * tileSize, (player.y - (centerY - viewWidth)) * tileSize, player.getSprite());
+			game.drawImg(tileWidth, tileHeight, (player.x - (centerX - viewWidth)) * tileWidth, (player.y - (centerY - viewHeight)) * tileHeight, player.getSprite());
 			game.drawText("(1)Tree: 1", 0, 20);
 		}
 	}
@@ -122,13 +135,13 @@ window.onload = function() {
 		constructor() {
 			super(randBounds(0, mapSize), randBounds(0, mapSize), "black");
 			this.sprites = [];
-			this.addSprite("assets/player.png", tileSize);
-			this.addSprite("assets/playerWater.png", tileSize);
-			this.addSprite("assets/playerDirt.png", tileSize);
+			this.addSprite("assets/player.png", tileWidth, tileHeight);
+			this.addSprite("assets/playerWater.png", tileWidth, tileHeight);
+			this.addSprite("assets/playerDirt.png", tileWidth, tileHeight);
 		}
 
-		addSprite(image, size) {
-			this.sprites.push(new Image(size, size));
+		addSprite(image, width, height) {
+			this.sprites.push(new Image(width, height));
 			this.sprites[this.sprites.length - 1].src = image;
 		}
 
@@ -145,8 +158,7 @@ window.onload = function() {
 	}
 
 	const player = new Player();
-	
-	//$(document).keydown(function(e) {
+
 	document.addEventListener('keydown', function(e) {
 		//Up
 		// Inner if statment checks player is in bounds and the next tile can be walked over
@@ -207,12 +219,13 @@ window.onload = function() {
 
 	class Game {
 		constructor() {
-			this.canvas = document.createElement("canvas"),
-			this.canvas.width = (viewWidth * 2) * tileSize;
-			this.canvas.height = (viewHeight * 2) * tileSize;
+			this.canvas = document.createElement("canvas");
+			this.canvas.width = screenWidth - 100;
+			this.canvas.height = screenHeight;
 			this.context = this.canvas.getContext("2d");
 			document.body.insertBefore(this.canvas, document.body.childNodes[0]);
-			this.interval = setInterval(updateGameArea, 20);
+			this.tick = this.tick.bind(this);
+			this.interval = setInterval(this.tick, 20);
 		}
 
 		clear() {
@@ -221,7 +234,7 @@ window.onload = function() {
 			this.draw(this.canvas.height,this.canvas.width,0,0,"white");
 		}
 
-		draw(height, width, x , y, color) {
+		draw(width, height, x , y, color) {
 			//Draw function with rotation if provided
 			this.context.save();
 			this.context.fillStyle = color;
@@ -243,6 +256,11 @@ window.onload = function() {
 			//Draw an image with the given parameters
 			this.context.drawImage(image, x, y, width, height);
 		}
+
+		tick() {
+			this.clear();
+			map.render(player.x, player.y);
+		}
 	}
 
 	const game = new Game();
@@ -250,10 +268,5 @@ window.onload = function() {
 	function randBounds(min, max) {
 		//get a random integer between min and max
 		return Math.floor((Math.random() * max) + min);
-	}
-
-	function updateGameArea() {
-		game.clear();
-		map.render(player.x, player.y);
 	}
 };
