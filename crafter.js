@@ -11,28 +11,31 @@ window.onload = function() {
 
 	
 	const mapSize = 100;
-	const viewHeight = 6;
-	const viewWidth = 8;
+	const viewHeight = 5;
+	const viewWidth = 7;
 	const tileWidth = screenWidth / (1 + (viewWidth * 2));
 	const tileHeight = screenHeight / (1 + (viewHeight * 2));
 	let lastKey = "up";
 
 	class Tile {
-		constructor (name, canWalkOver, sprite) {
+		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem) {
 			this.name = name;
 			this.canWalkOver = canWalkOver;
 			this.sprite = new Image(tileWidth, tileHeight);
 			this.sprite.src = sprite;
+			this.dropItem = dropItem;
+			this.destroysTo = destroysTo;
+			this.destructible = destructible;
 		}
 	}
 
 	const tiles = {
-		dirt: new Tile("dirt", true, "assets/dirt.png"),
-		grass: new Tile("grass", true, "assets/grass.png"),
-		water: new Tile("water", true, "assets/water.png"),
-		tree: new Tile("tree", false, "assets/tree.png"),
-		rock: new Tile("rock", false, "assets/rock.png"),
-		grassRock: new Tile("grassRock", true, "assets/grassRock.png")
+		dirt: new Tile("dirt", true, "assets/dirt.png", false, false, false),
+		grass: new Tile("grass", true, "assets/grass.png", false, false, false),
+		water: new Tile("water", true, "assets/water.png", false, false, false),
+		tree: new Tile("tree", false, "assets/tree.png", true, "grass", "wood"),
+		rock: new Tile("rock", false, "assets/rock.png", true, "grass", "rock"),
+		grassRock: new Tile("grassRock", true, "assets/grassRock.png", true, "grass", false)
 	};
 
 	class Hud {
@@ -41,7 +44,9 @@ window.onload = function() {
 		}
 
 		draw() {
-			game.drawText("(1)Tree: 1", 0, 20);
+			Object.keys(player.inventory).forEach(function(key, index) {
+				game.drawText(`${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
+			});
 		}
 	}
 
@@ -65,26 +70,27 @@ window.onload = function() {
 				}
 			}
 			//Draw random squares on the map
-			this.drawRandomSquares("dirt", randBounds(4, 10), 1, 15)
-			this.drawRandomSquares("water", randBounds(4, 10), 1, 15);
-			this.drawRandomSquares("tree", randBounds(4, 10), 1, 15);
+			this.drawRandomSquares("dirt", randBounds(4, 10), 1, 15, 70, 100)
+			this.drawRandomSquares("water", randBounds(4, 10), 1, 15, 100, 100);
+			this.drawRandomSquares("tree", randBounds(4, 10), 1, 15, 30, 50);
+			this.drawRandomSquares("rock", randBounds(4, 10), 1, 5, 30, 50);
 
 			//Draw random lines on the map
 			this.drawRandomLines("water", randBounds(5, 10), 1, mapSize);
 			this.drawRandomLines("dirt", randBounds(5, 10), 1, mapSize);
 		}
 
-		drawRandomSquares(tile, number, minSize, maxSize) {
+		drawRandomSquares(tile, number, minSize, maxSize, minPercentCoverage, maxPercentCoverage) {
 			for (let i = 0; i < number; i++) {
-				this.drawSquare(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minSize, maxSize), tile);
+				this.drawSquare(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minSize, maxSize), tile, randBounds(minPercentCoverage, maxPercentCoverage));
 			}
 		}
 
-		drawSquare(x, y, radius, tile) {
+		drawSquare(x, y, radius, tile, percentCoverage) {
 			//draw a square to the map at x and y with tile and a radius
 			for (let i = x - radius; i < x + radius; i++) {
 				for (let j = y - radius; j < y + radius; j++) {
-					if ((i < mapSize) && (j < mapSize) && (i >= 0) && (j >= 0)) {
+					if ((i < mapSize) && (j < mapSize) && (i >= 0) && (j >= 0) && (randBounds(0, 100) <= percentCoverage)) {
 						this.tileGrid[i][j] = tile;
 					}
 				}
@@ -154,10 +160,19 @@ window.onload = function() {
 	class Player extends GameObject {
 		constructor() {
 			super(randBounds(0, mapSize), randBounds(0, mapSize), "black");
+			this.inventory = {};
 			this.sprites = [];
 			this.addSprite("assets/player.png", tileWidth, tileHeight);
 			this.addSprite("assets/playerWater.png", tileWidth, tileHeight);
 			this.addSprite("assets/playerDirt.png", tileWidth, tileHeight);
+		}
+
+		addToInventory(item) {
+			if (player.inventory[item]) {
+				player.inventory[item] += 1;
+			} else {
+				player.inventory[item] = 1;
+			}
 		}
 
 		addSprite(image, width, height) {
@@ -211,10 +226,26 @@ window.onload = function() {
 		}
 		//e (Action key)
 		if (e.keyCode == 69) {
-			lastKey === "up" ? map.tileGrid[player.x][player.y - 1] = 1 :
-			lastKey == "down" ? map.tileGrid[player.x][player.y + 1] = 1 :
-			lastKey == "left" ? map.tileGrid[player.x - 1][player.y] = 1 :
-			map.tileGrid[player.x + 1][player.y] = 1;
+			let targetTile = false;
+			if (lastKey == "up" && tiles[map.tileGrid[player.x][player.y - 1]].destructible) {
+				targetTile = tiles[map.tileGrid[player.x][player.y - 1]];
+				map.tileGrid[player.x][player.y - 1] = targetTile.destroysTo;
+			}
+			if (lastKey == "down" && tiles[map.tileGrid[player.x][player.y + 1]].destructible) {
+				targetTile = tiles[map.tileGrid[player.x][player.y + 1]];
+				map.tileGrid[player.x][player.y + 1] = targetTile.destroysTo;
+			}
+			if (lastKey == "left" && tiles[map.tileGrid[player.x - 1][player.y]].destructible) {
+				targetTile = tiles[map.tileGrid[player.x - 1][player.y]];
+				map.tileGrid[player.x - 1][player.y] = targetTile.destroysTo;
+			}
+			if (lastKey == "right" && tiles[map.tileGrid[player.x + 1][player.y]].destructible) {
+				targetTile = tiles[map.tileGrid[player.x + 1][player.y]];
+				map.tileGrid[player.x + 1][player.y] = targetTile.destroysTo;
+			}
+			if (targetTile && targetTile.dropItem) {
+				player.addToInventory(targetTile.dropItem);
+			}
 		}
 		//1
 		if (e.keyCode == 49) {
