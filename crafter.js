@@ -26,39 +26,57 @@ window.onload = function() {
 		}
 	}
 
-	const tiles = [
-		new Tile("dirt", true, "assets/dirt.png"),
-		new Tile("grass", true, "assets/grass.png"),
-		new Tile("water", true, "assets/water.png"),
-		new Tile("dirt", true, "assets/dirt.png"),
-		new Tile("tree", false, "assets/tree.png"),
-		new Tile("rock", false, "assets/rock.png"),
-		new Tile("grassRock", true, "assets/grassRock.png")
-	];
+	const tiles = {
+		dirt: new Tile("dirt", true, "assets/dirt.png"),
+		grass: new Tile("grass", true, "assets/grass.png"),
+		water: new Tile("water", true, "assets/water.png"),
+		tree: new Tile("tree", false, "assets/tree.png"),
+		rock: new Tile("rock", false, "assets/rock.png"),
+		grassRock: new Tile("grassRock", true, "assets/grassRock.png")
+	};
+
+	class Hud {
+		constructor() {
+
+		}
+
+		draw() {
+			game.drawText("(1)Tree: 1", 0, 20);
+		}
+	}
+
+	const hud = new Hud();
 
 	class Map {
 		constructor() {
 			this.height = 100;
 			this.width = 100;
 			this.tileGrid = [];
-			//Fill the map array with grass at tiles[1]
+
+			// Build the 2d map array and add base grass and grassRock
 			for (let i = 0; i < mapSize; i++) {
 				this.tileGrid.push([]);
 				for (let j = 0; j < mapSize; j++) {
 					if (randBounds(0, 10) > 1) {
-						this.tileGrid[i].push(1);
+						this.tileGrid[i].push("grass");
 					} else {
-						this.tileGrid[i].push(6);
+						this.tileGrid[i].push("grassRock");
 					}
 				}
 			}
 			//Draw random squares on the map
-			for (let i = 0; i < randBounds(10, 15); i++) {
-				this.drawSquare(randBounds(5, mapSize - 6),randBounds(5, mapSize - 6),randBounds(2, 5),randBounds(0, tiles.length));
-			}
+			this.drawRandomSquares("dirt", randBounds(4, 10), 1, 15)
+			this.drawRandomSquares("water", randBounds(4, 10), 1, 15);
+			this.drawRandomSquares("tree", randBounds(4, 10), 1, 15);
+
 			//Draw random lines on the map
-			for (let i = 0; i < randBounds(2, 4); i ++) {
-				this.drawLine(randBounds(0, 10),randBounds(0, 10),randBounds(0, tiles.length),Math.random() >= 0.5);
+			this.drawRandomLines("water", randBounds(5, 10), 1, mapSize);
+			this.drawRandomLines("dirt", randBounds(5, 10), 1, mapSize);
+		}
+
+		drawRandomSquares(tile, number, minSize, maxSize) {
+			for (let i = 0; i < number; i++) {
+				this.drawSquare(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minSize, maxSize), tile);
 			}
 		}
 
@@ -72,26 +90,35 @@ window.onload = function() {
 				}
 			}
 		}
-
 		
-		drawLine(startX, startY, tile, horizontal) {
+		drawRandomLines(tile, number, minLength, maxLength) {
+			for (let i = 0; i < number; i++) {
+				this.drawLine(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minLength, maxLength), tile, Math.random() >= 0.5);
+			}
+		}
+		
+		drawLine(startX, startY, length, tile, horizontal) {
 			//Draw a line on the map starting at startX and startY with the selected tile
 			//Horizontal line
 			if (horizontal) {
-				for (let i = startY; i < this.tileGrid[0].length; i++) {
-					this.tileGrid[startX][i] = tile;
+				for (let i = startY; i < startY + length; i++) {
+					if (i < mapSize) {
+						this.tileGrid[startX][i] = tile;
+					}
 				}
 			} else {
 				//Vertical line
-				for (let i = startX; i < this.tileGrid[0].length; i++) {
-					this.tileGrid[i][startY] = tile;
+				for (let i = startX; i < startX + length; i++) {
+					if (i < mapSize) {
+						this.tileGrid[i][startY] = tile;
+					}
 				}
 			}
 		}
 
 		render(centerX, centerY) {
-			//Go through the map array and draw all the tiles to the canvas
-			//make sure the camera doesn't go out of bounds for drawing the map array
+			// Find where the camera should be centered
+			// If the player is near the edge of the map don't move the camera out of map bounds
 			if (centerX + viewWidth > this.tileGrid[0].length) {
 				centerX = this.tileGrid[0].length - viewWidth;
 			} else if (centerX - viewWidth < 0) {
@@ -106,18 +133,11 @@ window.onload = function() {
 			// Loop through the 2d tile grid and draw all the tile sprites
 			for (let i = centerX - viewWidth; i < centerX + viewWidth; i++) {
 				for (let j = centerY - viewHeight; j < centerY + viewHeight; j++) {
-					//if the tile is a plain colour tile
-					if (tiles[this.tileGrid[i][j]].color) {
-						game.draw(tileWidth, tileHeight, (i - (centerX - viewWidth)) * tileWidth, (j - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[i][j]].color);
-					} else {
-						//If the tile is an image asset draw with draw image
-						game.drawImg(tileWidth, tileHeight, (i - (centerX - viewWidth)) * tileWidth, (j - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[i][j]].sprite);
-					}
+					game.drawImg(tileWidth, tileHeight, (i - (centerX - viewWidth)) * tileWidth, (j - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[i][j]].sprite);
 				}
 			}
 			//Draw the player
 			game.drawImg(tileWidth, tileHeight, (player.x - (centerX - viewWidth)) * tileWidth, (player.y - (centerY - viewHeight)) * tileHeight, player.getSprite());
-			game.drawText("(1)Tree: 1", 0, 20);
 		}
 	}
 
@@ -147,10 +167,10 @@ window.onload = function() {
 
 		getSprite() {
 			switch(map.tileGrid[this.x][this.y]) {
-				case 0:
-					return this.sprites[2];
-				case 2:
+				case "water":
 					return this.sprites[1];
+				case "dirt":
+					return this.sprites[2];
 				default:
 					return this.sprites[0];
 			}
@@ -260,6 +280,7 @@ window.onload = function() {
 		tick() {
 			this.clear();
 			map.render(player.x, player.y);
+			hud.draw();
 		}
 	}
 
