@@ -18,7 +18,7 @@ window.onload = function() {
 	let lastKey = "up";
 
 	class Tile {
-		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem) {
+		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem, dropAmount) {
 			this.name = name;
 			this.canWalkOver = canWalkOver;
 			this.sprite = new Image(tileWidth, tileHeight);
@@ -26,16 +26,17 @@ window.onload = function() {
 			this.dropItem = dropItem;
 			this.destroysTo = destroysTo;
 			this.destructible = destructible;
+			this.dropAmount = dropAmount;
 		}
 	}
 
 	const tiles = {
-		dirt: new Tile("dirt", true, "assets/dirt.png", false, false, false),
-		grass: new Tile("grass", true, "assets/grass.png", false, false, false),
-		water: new Tile("water", true, "assets/water.png", false, false, false),
-		tree: new Tile("tree", false, "assets/tree.png", true, "grass", "wood"),
-		rock: new Tile("rock", false, "assets/rock.png", true, "grass", "rock"),
-		grassRock: new Tile("grassRock", true, "assets/grassRock.png", true, "grass", false)
+		dirt: new Tile("dirt", true, "assets/dirt.png", false, false, false, false),
+		grass: new Tile("grass", true, "assets/grass.png", false, false, false, false),
+		water: new Tile("water", true, "assets/water.png", false, false, false, false),
+		tree: new Tile("tree", false, "assets/tree.png", true, "grass", "wood", 10),
+		rock: new Tile("rock", false, "assets/rock.png", true, "grass", "rock", 10),
+		grassRock: new Tile("grassRock", true, "assets/grassRock.png", true, "grass", 2)
 	};
 
 	class Hud {
@@ -167,11 +168,11 @@ window.onload = function() {
 			this.addSprite("assets/playerDirt.png", tileWidth, tileHeight);
 		}
 
-		addToInventory(item) {
+		addToInventory(item, number) {
 			if (player.inventory[item]) {
-				player.inventory[item] += 1;
+				player.inventory[item] += number;
 			} else {
-				player.inventory[item] = 1;
+				player.inventory[item] = number;
 			}
 		}
 
@@ -244,7 +245,7 @@ window.onload = function() {
 				map.tileGrid[player.x + 1][player.y] = targetTile.destroysTo;
 			}
 			if (targetTile && targetTile.dropItem) {
-				player.addToInventory(targetTile.dropItem);
+				player.addToInventory(targetTile.dropItem, targetTile.dropAmount);
 			}
 		}
 		//1
