@@ -15,10 +15,9 @@ window.onload = function() {
 	const viewWidth = 7;
 	const tileWidth = screenWidth / (1 + (viewWidth * 2));
 	const tileHeight = screenHeight / (1 + (viewHeight * 2));
-	let lastKey = "up";
 
 	class Tile {
-		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem, dropAmount) {
+		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem, dropAmount, isBackground) {
 			this.name = name;
 			this.canWalkOver = canWalkOver;
 			this.sprite = new Image(tileWidth, tileHeight);
@@ -27,16 +26,18 @@ window.onload = function() {
 			this.destroysTo = destroysTo;
 			this.destructible = destructible;
 			this.dropAmount = dropAmount;
+			this.isBackground = isBackground;
 		}
 	}
 
 	const tiles = {
-		dirt: new Tile("dirt", true, "assets/dirt.png", false, false, false, false),
-		grass: new Tile("grass", true, "assets/grass.png", false, false, false, false),
-		water: new Tile("water", true, "assets/water.png", false, false, false, false),
-		tree: new Tile("tree", false, "assets/tree.png", true, "grass", "wood", 10),
-		rock: new Tile("rock", false, "assets/rock.png", true, "grass", "rock", 10),
-		grassRock: new Tile("grassRock", true, "assets/grassRock.png", true, "grass", 2)
+		dirt: new Tile('dirt', true, 'assets/dirt.png', false, false, false, false, true),
+		grass: new Tile('grass', true, 'assets/grass.png', false, false, false, false, true),
+		water: new Tile('water', true, 'assets/water.png', false, false, false, false, true),
+		tree: new Tile('tree', false, 'assets/tree.png', true, 'halfTree', 'wood', 10, false),
+		halfTree: new Tile('halfTree', false, 'assets/halfTree.png', true, 'grass', 'wood', 10, false),
+		rock: new Tile('rock', false, 'assets/rock.png', true, 'grass', 'rock', 10, false),
+		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', 2, true)
 	};
 
 	class Hud {
@@ -64,21 +65,40 @@ window.onload = function() {
 				this.tileGrid.push([]);
 				for (let j = 0; j < mapSize; j++) {
 					if (randBounds(0, 10) > 1) {
-						this.tileGrid[i].push("grass");
+						this.tileGrid[i].push(['grass']);
 					} else {
-						this.tileGrid[i].push("grassRock");
+						this.tileGrid[i].push(['grassRock']);
 					}
 				}
 			}
 			//Draw random squares on the map
-			this.drawRandomSquares("dirt", randBounds(4, 10), 1, 15, 70, 100)
-			this.drawRandomSquares("water", randBounds(4, 10), 1, 15, 100, 100);
-			this.drawRandomSquares("tree", randBounds(4, 10), 1, 15, 30, 50);
-			this.drawRandomSquares("rock", randBounds(4, 10), 1, 5, 30, 50);
+			this.drawRandomSquares('dirt', randBounds(4, 10), 1, 15, 70, 100);
+			this.drawRandomSquares('water', randBounds(4, 10), 1, 15, 100, 100);
+			this.drawRandomSquares('tree', randBounds(4, 10), 1, 15, 30, 50);
+			this.drawRandomSquares('rock', randBounds(4, 10), 1, 5, 30, 50);
 
 			//Draw random lines on the map
-			this.drawRandomLines("water", randBounds(5, 10), 1, mapSize);
-			this.drawRandomLines("dirt", randBounds(5, 10), 1, mapSize);
+			this.drawRandomLines('dirt', randBounds(5, 10), 1, mapSize);
+			this.drawRandomLines('water', randBounds(5, 10), 1, mapSize);
+
+			// Remove any tiles behind a tile that is a background tile on the screen
+			// Saves memory and number of draw operations per frame when rendered
+			for (let x = 0; x < mapSize; x++) {
+				for (let y = 0; y < mapSize; y++) {
+					let lowestBackground = 0;
+					for (let z = 0; z < this.tileGrid[x][y].length; z++) {
+						if (tiles[this.tileGrid[x][y][z]].isBackground) {
+							lowestBackground = z;
+						}
+					}
+					this.tileGrid[x][y] = this.tileGrid[x][y].splice(lowestBackground, this.tileGrid[x][y].length);
+				}
+			}
+
+		}
+
+		getTopTileAt(x, y) {
+			return this.tileGrid[x][y][this.tileGrid[x][y].length - 1];
 		}
 
 		drawRandomSquares(tile, number, minSize, maxSize, minPercentCoverage, maxPercentCoverage) {
@@ -92,7 +112,7 @@ window.onload = function() {
 			for (let i = x - radius; i < x + radius; i++) {
 				for (let j = y - radius; j < y + radius; j++) {
 					if ((i < mapSize) && (j < mapSize) && (i >= 0) && (j >= 0) && (randBounds(0, 100) <= percentCoverage)) {
-						this.tileGrid[i][j] = tile;
+						this.tileGrid[i][j].push(tile);
 					}
 				}
 			}
@@ -110,14 +130,14 @@ window.onload = function() {
 			if (horizontal) {
 				for (let i = startY; i < startY + length; i++) {
 					if (i < mapSize) {
-						this.tileGrid[startX][i] = tile;
+						this.tileGrid[startX][i].push(tile);
 					}
 				}
 			} else {
 				//Vertical line
 				for (let i = startX; i < startX + length; i++) {
 					if (i < mapSize) {
-						this.tileGrid[i][startY] = tile;
+						this.tileGrid[i][startY].push(tile);
 					}
 				}
 			}
@@ -138,34 +158,39 @@ window.onload = function() {
 			}
 
 			// Loop through the 2d tile grid and draw all the tile sprites
-			for (let i = centerX - viewWidth; i < centerX + viewWidth; i++) {
-				for (let j = centerY - viewHeight; j < centerY + viewHeight; j++) {
-					game.drawImg(tileWidth, tileHeight, (i - (centerX - viewWidth)) * tileWidth, (j - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[i][j]].sprite);
+			for (let x = centerX - viewWidth; x < centerX + viewWidth; x++) {
+				for (let y = centerY - viewHeight; y < centerY + viewHeight; y++) {
+					for (let z in this.tileGrid[x][y]) {
+						game.drawImg(tileWidth, tileHeight, (x - (centerX - viewWidth)) * tileWidth, (y - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[x][y][z]].sprite);
+					}
 				}
 			}
 			//Draw the player
-			game.drawImg(tileWidth, tileHeight, (player.x - (centerX - viewWidth)) * tileWidth, (player.y - (centerY - viewHeight)) * tileHeight, player.getSprite());
+			game.drawImg(tileWidth, tileHeight, (player.x - (centerX - viewWidth)) * tileWidth, (player.y - (centerY - viewHeight)) * tileHeight, player.sprite);
+
+			// Draw the npcs
+			for (let i = 0; i < npcNo; i++) {
+				game.drawImg(tileWidth, tileHeight, (npcs[i].x - (centerX - viewWidth)) * tileWidth, (npcs[i].y - (centerY - viewWidth)) * tileHeight, npcs[i].sprite);
+			}
 		}
 	}
 
 	const map = new Map();
 
 	class GameObject {
-		constructor(x, y, color) {
+		constructor(x, y, sprite) {
 			this.x = x;
 			this.y = y;
-			this.color = color;
+			this.sprite = new Image(tileWidth, tileHeight);
+			this.sprite.src = sprite;
 		}
 	}
 
 	class Player extends GameObject {
 		constructor() {
-			super(randBounds(0, mapSize), randBounds(0, mapSize), "black");
+			super(randBounds(0, mapSize), randBounds(0, mapSize), 'assets/player.png');
 			this.inventory = {};
-			this.sprites = [];
-			this.addSprite("assets/player.png", tileWidth, tileHeight);
-			this.addSprite("assets/playerWater.png", tileWidth, tileHeight);
-			this.addSprite("assets/playerDirt.png", tileWidth, tileHeight);
+			this.facing = 'up';
 		}
 
 		addToInventory(item, number) {
@@ -175,22 +200,18 @@ window.onload = function() {
 				player.inventory[item] = number;
 			}
 		}
+	}
 
-		addSprite(image, width, height) {
-			this.sprites.push(new Image(width, height));
-			this.sprites[this.sprites.length - 1].src = image;
+	class Npc extends GameObject {
+		constructor(x, y, sprite) {
+			super(x, y, sprite);
 		}
+	}
 
-		getSprite() {
-			switch(map.tileGrid[this.x][this.y]) {
-				case "water":
-					return this.sprites[1];
-				case "dirt":
-					return this.sprites[2];
-				default:
-					return this.sprites[0];
-			}
-		}
+	const npcNo = randBounds(5, 10);
+	let npcs = [];
+	for (let i = 0; i < npcNo; i++) {
+		npcs[i] = new Npc(randBounds(0, mapSize), randBounds(0, mapSize), './assets/npc.png');
 	}
 
 	const player = new Player();
@@ -199,68 +220,53 @@ window.onload = function() {
 		//Up
 		// Inner if statment checks player is in bounds and the next tile can be walked over
 		if (e.keyCode == 87 || e.keyCode == 38) {
-			if ((player.y > 0) && (tiles[map.tileGrid[player.x][player.y - 1]].canWalkOver)) {
+			if ((player.y > 0) && (tiles[map.getTopTileAt(player.x, player.y - 1)].canWalkOver)) {
 				player.y -= 1;
 			}
-			lastKey = "up";
+			player.facing = 'up';
 		} 
 		//Right
 		if (e.keyCode == 68 || e.keyCode == 39) {
-			if ((player.x < mapSize - 1) && (tiles[map.tileGrid[player.x + 1][player.y]].canWalkOver)) {
+			if ((player.x < mapSize - 1) && (tiles[map.getTopTileAt(player.x + 1, player.y)].canWalkOver)) {
 				player.x += 1;
 			}
-			lastKey = "right";
+			player.facing = 'right';
 		}
 		//Left
 		if (e.keyCode == 65 || e.keyCode == 37) {
-			if ((player.x > 0) && (tiles[map.tileGrid[player.x - 1][player.y]].canWalkOver)) {
+			if ((player.x > 0) && (tiles[map.getTopTileAt(player.x - 1, player.y)].canWalkOver)) {
 				player.x -= 1;
 			}
-			lastKey = "left";
+			player.facing = 'left';
 		}
 		//Down
 		if (e.keyCode == 83 || e.keyCode == 40) {
-			if ((player.y < mapSize - 1) && (tiles[map.tileGrid[player.x][player.y + 1]].canWalkOver)) {
+			if ((player.y < mapSize - 1) && (tiles[map.getTopTileAt(player.x, player.y + 1)].canWalkOver)) {
 				player.y += 1;
 			}
-			lastKey = "down";
+			player.facing = 'down';
 		}
 		//e (Action key)
 		if (e.keyCode == 69) {
 			let targetTile = false;
-			if (lastKey == "up" && tiles[map.tileGrid[player.x][player.y - 1]].destructible) {
-				targetTile = tiles[map.tileGrid[player.x][player.y - 1]];
-				map.tileGrid[player.x][player.y - 1] = targetTile.destroysTo;
+			if (player.facing == 'up' && tiles[map.getTopTileAt(player.x, player.y - 1)].destructible) {
+				targetTile = tiles[map.getTopTileAt(player.x, player.y - 1)];
+				map.tileGrid[player.x][player.y - 1].push(targetTile.destroysTo);
 			}
-			if (lastKey == "down" && tiles[map.tileGrid[player.x][player.y + 1]].destructible) {
-				targetTile = tiles[map.tileGrid[player.x][player.y + 1]];
-				map.tileGrid[player.x][player.y + 1] = targetTile.destroysTo;
+			if (player.facing == 'down' && tiles[map.getTopTileAt(player.x, player.y + 1)].destructible) {
+				targetTile = tiles[map.getTopTileAt(player.x, player.y + 1)];
+				map.tileGrid[player.x][player.y + 1].push(targetTile.destroysTo);
 			}
-			if (lastKey == "left" && tiles[map.tileGrid[player.x - 1][player.y]].destructible) {
-				targetTile = tiles[map.tileGrid[player.x - 1][player.y]];
-				map.tileGrid[player.x - 1][player.y] = targetTile.destroysTo;
+			if (player.facing == 'left' && tiles[map.getTopTileAt(player.x - 1, player.y)].destructible) {
+				targetTile = tiles[map.getTopTileAt(player.x - 1, player.y)];
+				map.tileGrid[player.x - 1][player.y].push(targetTile.destroysTo);
 			}
-			if (lastKey == "right" && tiles[map.tileGrid[player.x + 1][player.y]].destructible) {
-				targetTile = tiles[map.tileGrid[player.x + 1][player.y]];
-				map.tileGrid[player.x + 1][player.y] = targetTile.destroysTo;
+			if (player.facing == 'right' && tiles[map.getTopTileAt(player.x + 1, player.y)].destructible) {
+				targetTile = tiles[map.getTopTileAt(player.x + 1, player.y)];
+				map.tileGrid[player.x + 1][player.y].push(targetTile.destroysTo);
 			}
 			if (targetTile && targetTile.dropItem) {
 				player.addToInventory(targetTile.dropItem, targetTile.dropAmount);
-			}
-		}
-		//1
-		if (e.keyCode == 49) {
-			if (lastKey == "up" && map.tileGrid[player.x][player.y - 1] == 1) {
-				map.tileGrid[player.x][player.y - 1] = 4;
-			}
-			if (lastKey == "down" && map.tileGrid[player.x][player.y + 1] == 1) {
-				map.tileGrid[player.x][player.y + 1] = 4;
-			}
-			if (lastKey == "left" && map.tileGrid[player.x - 1][player.y] == 1) {
-				map.tileGrid[player.x - 1][player.y] = 4;
-			}
-			if (lastKey == "right" && map.tileGrid[player.x + 1][player.y] == 1) {
-				map.tileGrid[player.x + 1][player.y] = 4;
 			}
 		}
 		console.log(player.x);
@@ -271,10 +277,10 @@ window.onload = function() {
 
 	class Game {
 		constructor() {
-			this.canvas = document.createElement("canvas");
+			this.canvas = document.createElement('canvas');
 			this.canvas.width = screenWidth - 100;
 			this.canvas.height = screenHeight;
-			this.context = this.canvas.getContext("2d");
+			this.context = this.canvas.getContext('2d');
 			document.body.insertBefore(this.canvas, document.body.childNodes[0]);
 			this.tick = this.tick.bind(this);
 			this.interval = setInterval(this.tick, 20);
@@ -283,7 +289,7 @@ window.onload = function() {
 		clear() {
 			//Clear the canvas to avoid drawing over the last frame
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.draw(this.canvas.height,this.canvas.width,0,0,"white");
+			this.draw(this.canvas.height,this.canvas.width,0,0,'white');
 		}
 
 		draw(width, height, x , y, color) {
@@ -299,7 +305,7 @@ window.onload = function() {
 		drawText(theString, x, y) {
 			//Draw function for text
 			this.context.save();
-			this.context.font = "16px Verdana";
+			this.context.font = '16px Verdana';
 			this.context.fillText(theString, x, y);
 			this.context.restore();
 		}
