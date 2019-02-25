@@ -17,7 +17,7 @@ window.onload = function() {
 	const tileHeight = screenHeight / (1 + (viewHeight * 2));
 
 	class Tile {
-		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem, dropAmount, isBackground) {
+		constructor (name, canWalkOver, sprite, destructible, destroysTo, dropItem, dropAmount, isBackground, isStackable) {
 			this.name = name;
 			this.canWalkOver = canWalkOver;
 			this.sprite = new Image(tileWidth, tileHeight);
@@ -27,24 +27,23 @@ window.onload = function() {
 			this.destructible = destructible;
 			this.dropAmount = dropAmount;
 			this.isBackground = isBackground;
+			this.isStackable = isStackable;
 		}
 	}
 
 	const tiles = {
-		dirt: new Tile('dirt', true, 'assets/dirt.png', false, false, false, false, true),
-		grass: new Tile('grass', true, 'assets/grass.png', false, false, false, false, true),
-		water: new Tile('water', true, 'assets/water.png', false, false, false, false, true),
-		tree: new Tile('tree', false, 'assets/tree.png', true, 'halfTree', 'wood', 10, false),
-		halfTree: new Tile('halfTree', false, 'assets/halfTree.png', true, 'grass', 'wood', 10, false),
-		rock: new Tile('rock', false, 'assets/rock.png', true, 'grass', 'rock', 10, false),
-		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', 2, true)
+		dirt: new Tile('dirt', true, 'assets/dirt.png', false, false, false, false, true, true),
+		grass: new Tile('grass', true, 'assets/grass.png', false, false, false, false, true, true),
+		water: new Tile('water', true, 'assets/water.png', false, false, false, false, true, false),
+		tree: new Tile('tree', false, 'assets/tree.png', true, 'halfTree', 'wood', 10, false, false),
+		halfTree: new Tile('halfTree', false, 'assets/halfTree.png', true, false, 'wood', 10, false, false),
+		halfRock: new Tile('halfRock', false, 'assets/halfRock.png', true, false, 'rock', 10, false, false),
+		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'rock', 10, false, false),
+		ironRock: new Tile('ironRock', false, 'assets/ironRock.png', true, 'rock', 'iron', 1, false, false),
+		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true)
 	};
 
 	class Hud {
-		constructor() {
-
-		}
-
 		draw() {
 			Object.keys(player.inventory).forEach(function(key, index) {
 				game.drawText(`${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
@@ -71,11 +70,12 @@ window.onload = function() {
 					}
 				}
 			}
-			//Draw random squares on the map
+			//Draw random squares on the map, the order is important
 			this.drawRandomSquares('dirt', randBounds(4, 10), 1, 15, 70, 100);
 			this.drawRandomSquares('water', randBounds(4, 10), 1, 15, 100, 100);
 			this.drawRandomSquares('tree', randBounds(4, 10), 1, 15, 30, 50);
 			this.drawRandomSquares('rock', randBounds(4, 10), 1, 5, 30, 50);
+			this.drawRandomSquares('ironRock', randBounds(4, 6), 1, 5, 30, 50);
 
 			//Draw random lines on the map
 			this.drawRandomLines('dirt', randBounds(5, 10), 1, mapSize);
@@ -94,11 +94,33 @@ window.onload = function() {
 					this.tileGrid[x][y] = this.tileGrid[x][y].splice(lowestBackground, this.tileGrid[x][y].length);
 				}
 			}
+		}
 
+		isInBounds(x, y) {
+			if (x >= 0 && x <= mapSize && y >= 0 && y <= mapSize) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		destroyTopTileAt(x, y) {
+			let destroyTile = this.getTopTileAt(x, y);
+			this.tileGrid[x][y].pop();
+			if (destroyTile.destroysTo) {
+				this.tileGrid[x][y].push(destroyTile.destroysTo);
+			}
+			return destroyTile;
 		}
 
 		getTopTileAt(x, y) {
-			return this.tileGrid[x][y][this.tileGrid[x][y].length - 1];
+			return tiles[this.tileGrid[x][y][this.tileGrid[x][y].length - 1]];
+		}
+
+		addTileAt(x, y, tile) {
+			if (this.getTopTileAt(x, y).isStackable) {
+				this.tileGrid[x][y].push(tile);
+			}
 		}
 
 		drawRandomSquares(tile, number, minSize, maxSize, minPercentCoverage, maxPercentCoverage) {
@@ -112,7 +134,7 @@ window.onload = function() {
 			for (let i = x - radius; i < x + radius; i++) {
 				for (let j = y - radius; j < y + radius; j++) {
 					if ((i < mapSize) && (j < mapSize) && (i >= 0) && (j >= 0) && (randBounds(0, 100) <= percentCoverage)) {
-						this.tileGrid[i][j].push(tile);
+						this.addTileAt(i, j, tile);
 					}
 				}
 			}
@@ -130,14 +152,14 @@ window.onload = function() {
 			if (horizontal) {
 				for (let i = startY; i < startY + length; i++) {
 					if (i < mapSize) {
-						this.tileGrid[startX][i].push(tile);
+						this.addTileAt(startX, i, tile);
 					}
 				}
 			} else {
 				//Vertical line
 				for (let i = startX; i < startX + length; i++) {
 					if (i < mapSize) {
-						this.tileGrid[i][startY].push(tile);
+						this.addTileAt(i, startY, tile);
 					}
 				}
 			}
@@ -146,20 +168,20 @@ window.onload = function() {
 		render(centerX, centerY) {
 			// Find where the camera should be centered
 			// If the player is near the edge of the map don't move the camera out of map bounds
-			if (centerX + viewWidth > this.tileGrid[0].length) {
-				centerX = this.tileGrid[0].length - viewWidth;
+			if (centerX + viewWidth >= this.tileGrid[0].length) {
+				centerX = (this.tileGrid[0].length - 1) - viewWidth;
 			} else if (centerX - viewWidth < 0) {
 				centerX = viewWidth;
 			}
-			if (centerY + viewHeight > this.tileGrid[1].length) {
-				centerY = this.tileGrid[1].length - viewHeight;
+			if (centerY + viewHeight >= this.tileGrid[1].length) {
+				centerY = (this.tileGrid[1].length - 1) - viewHeight;
 			} else if (centerY - viewHeight < 0) {
 				centerY = viewHeight;
 			}
 
 			// Loop through the 2d tile grid and draw all the tile sprites
-			for (let x = centerX - viewWidth; x < centerX + viewWidth; x++) {
-				for (let y = centerY - viewHeight; y < centerY + viewHeight; y++) {
+			for (let x = centerX - viewWidth; x <= centerX + viewWidth; x++) {
+				for (let y = centerY - viewHeight; y <= centerY + viewHeight; y++) {
 					for (let z in this.tileGrid[x][y]) {
 						game.drawImg(tileWidth, tileHeight, (x - (centerX - viewWidth)) * tileWidth, (y - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[x][y][z]].sprite);
 					}
@@ -184,6 +206,13 @@ window.onload = function() {
 			this.sprite = new Image(tileWidth, tileHeight);
 			this.sprite.src = sprite;
 		}
+
+		move(x, y) {
+			if (map.isInBounds(this.x + x, this.y + y) && map.getTopTileAt(this.x + x, this.y + y).canWalkOver) {
+				this.x += x;
+				this.y += y;
+			}
+		}
 	}
 
 	class Player extends GameObject {
@@ -191,14 +220,39 @@ window.onload = function() {
 			super(randBounds(0, mapSize), randBounds(0, mapSize), 'assets/player.png');
 			this.inventory = {};
 			this.facing = 'up';
+			this._directions = {'up': {dX: 0, dY: -1}, 'right': {dX: 1, dY: 0}, 'left': {dX: -1, dY: 0}, 'down': {dX: 0, dY: 1}};
+			this._keyBindings = {87: 'up', 38: 'up', 68: 'right', 39: 'right', 65: 'left', 37: 'left', 83: 'down', 40: 'down'};
+		}
+
+		hasKey(key) {
+			if (this._keyBindings[key] || key === 69) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		destroyTile(tileX, tileY) {
+			let destroyedTile = false;
+			if (map.getTopTileAt(tileX, tileY).destructible) {
+				destroyedTile = map.destroyTopTileAt(tileX, tileY);
+			}
+			if (destroyedTile && destroyedTile.dropItem) {
+				this.addToInventory(destroyedTile.dropItem, destroyedTile.dropAmount);
+			}
+		}
+
+		handleKey(key) {
+			if (key === 69) {
+				this.destroyTile(this.x + this._directions[this.facing].dX, this.y + this._directions[this.facing].dY);
+			} else {
+				this.move(this._directions[this._keyBindings[key]].dX, this._directions[this._keyBindings[key]].dY);
+				this.facing = this._keyBindings[key];
+			}
 		}
 
 		addToInventory(item, number) {
-			if (player.inventory[item]) {
-				player.inventory[item] += number;
-			} else {
-				player.inventory[item] = number;
-			}
+			player.inventory[item] ? player.inventory[item] += number : player.inventory[item] = number;
 		}
 	}
 
@@ -219,55 +273,8 @@ window.onload = function() {
 	document.addEventListener('keydown', function(e) {
 		//Up
 		// Inner if statment checks player is in bounds and the next tile can be walked over
-		if (e.keyCode == 87 || e.keyCode == 38) {
-			if ((player.y > 0) && (tiles[map.getTopTileAt(player.x, player.y - 1)].canWalkOver)) {
-				player.y -= 1;
-			}
-			player.facing = 'up';
-		} 
-		//Right
-		if (e.keyCode == 68 || e.keyCode == 39) {
-			if ((player.x < mapSize - 1) && (tiles[map.getTopTileAt(player.x + 1, player.y)].canWalkOver)) {
-				player.x += 1;
-			}
-			player.facing = 'right';
-		}
-		//Left
-		if (e.keyCode == 65 || e.keyCode == 37) {
-			if ((player.x > 0) && (tiles[map.getTopTileAt(player.x - 1, player.y)].canWalkOver)) {
-				player.x -= 1;
-			}
-			player.facing = 'left';
-		}
-		//Down
-		if (e.keyCode == 83 || e.keyCode == 40) {
-			if ((player.y < mapSize - 1) && (tiles[map.getTopTileAt(player.x, player.y + 1)].canWalkOver)) {
-				player.y += 1;
-			}
-			player.facing = 'down';
-		}
-		//e (Action key)
-		if (e.keyCode == 69) {
-			let targetTile = false;
-			if (player.facing == 'up' && tiles[map.getTopTileAt(player.x, player.y - 1)].destructible) {
-				targetTile = tiles[map.getTopTileAt(player.x, player.y - 1)];
-				map.tileGrid[player.x][player.y - 1].push(targetTile.destroysTo);
-			}
-			if (player.facing == 'down' && tiles[map.getTopTileAt(player.x, player.y + 1)].destructible) {
-				targetTile = tiles[map.getTopTileAt(player.x, player.y + 1)];
-				map.tileGrid[player.x][player.y + 1].push(targetTile.destroysTo);
-			}
-			if (player.facing == 'left' && tiles[map.getTopTileAt(player.x - 1, player.y)].destructible) {
-				targetTile = tiles[map.getTopTileAt(player.x - 1, player.y)];
-				map.tileGrid[player.x - 1][player.y].push(targetTile.destroysTo);
-			}
-			if (player.facing == 'right' && tiles[map.getTopTileAt(player.x + 1, player.y)].destructible) {
-				targetTile = tiles[map.getTopTileAt(player.x + 1, player.y)];
-				map.tileGrid[player.x + 1][player.y].push(targetTile.destroysTo);
-			}
-			if (targetTile && targetTile.dropItem) {
-				player.addToInventory(targetTile.dropItem, targetTile.dropAmount);
-			}
+		if (player.hasKey(e.keyCode)) {
+			player.handleKey(e.keyCode);
 		}
 		console.log(player.x);
 		console.log(player.y);
@@ -278,7 +285,7 @@ window.onload = function() {
 	class Game {
 		constructor() {
 			this.canvas = document.createElement('canvas');
-			this.canvas.width = screenWidth - 100;
+			this.canvas.width = screenWidth;
 			this.canvas.height = screenHeight;
 			this.context = this.canvas.getContext('2d');
 			document.body.insertBefore(this.canvas, document.body.childNodes[0]);
