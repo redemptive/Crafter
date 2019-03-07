@@ -12,5 +12,15 @@ I wanted to see what I could do with just a HTML5 canvas and a bit of vanilla ja
 
 Simply clone the repository and open the index.html file on any internet browser to run.
 
+## Controls
+
+Please read this. It's not as fun if you don't know how to play it!
+
 - WASD keys or arrow keys: move the player
 - E key: Action key. Chop down trees, mine rocks etc
+- C key: Toggle crafting menu
+
+### Crating Menu
+
+- W and S keys: select which item to craft
+- Space bar: craft

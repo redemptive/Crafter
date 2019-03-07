@@ -37,10 +37,34 @@ window.onload = function() {
 		water: new Tile('water', true, 'assets/water.png', false, false, false, false, true, false),
 		tree: new Tile('tree', false, 'assets/tree.png', true, 'halfTree', 'wood', 10, false, false),
 		halfTree: new Tile('halfTree', false, 'assets/halfTree.png', true, false, 'wood', 10, false, false),
-		halfRock: new Tile('halfRock', false, 'assets/halfRock.png', true, false, 'rock', 10, false, false),
-		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'rock', 10, false, false),
+		halfRock: new Tile('halfRock', false, 'assets/halfRock.png', true, false, 'stone', 10, false, false),
+		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'stone', 10, false, false),
 		ironRock: new Tile('ironRock', false, 'assets/ironRock.png', true, 'rock', 'iron', 1, false, false),
-		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true)
+		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true),
+		campFire: new Tile('campFire', true, 'assets/campFire.png', false, false, false, false, false, false)
+	};
+
+	class Item {
+		constructor(name, isCraftable, requiredToCraft, description) {
+			this.name = name;
+			this.isCraftable = isCraftable;
+			this.requiredToCraft = requiredToCraft;
+			this.description = description;
+		}
+
+		getRequiredToCraftString() {
+			let string = `${this.name}: `;
+			for (let i in Object.keys(this.requiredToCraft)) {
+				string += `${Object.keys(this.requiredToCraft)[i]}: ${this.requiredToCraft[Object.keys(this.requiredToCraft)[i]]}, `;
+			}
+			return string;
+		}
+	}
+
+	const items = {
+		campFire: new Item('campFire', true, {wood: 4}, 'A nice cosy campfire'),
+		stoneAxe: new Item('stoneAxe', true, {wood: 2, stone: 2}, 'A sharp flint axe'),
+		stonePickaxe: new Item('stonePickaxe', true, {wood:2, stone: 2}, 'A tough stone pickaxe')
 	};
 
 	class Hud {
@@ -81,6 +105,8 @@ window.onload = function() {
 			this.drawRandomLines('dirt', randBounds(5, 10), 1, mapSize);
 			this.drawRandomLines('water', randBounds(5, 10), 1, mapSize);
 
+			this.addTileAt(10, 10, 'campFire');
+
 			// Remove any tiles behind a tile that is a background tile on the screen
 			// Saves memory and number of draw operations per frame when rendered
 			for (let x = 0; x < mapSize; x++) {
@@ -97,11 +123,7 @@ window.onload = function() {
 		}
 
 		isInBounds(x, y) {
-			if (x >= 0 && x <= mapSize && y >= 0 && y <= mapSize) {
-				return true;
-			} else {
-				return false;
-			}
+			return (x >= 0 && x <= mapSize && y >= 0 && y <= mapSize) ? true : false;
 		}
 
 		destroyTopTileAt(x, y) {
@@ -199,6 +221,42 @@ window.onload = function() {
 
 	const map = new Map();
 
+	class CraftScreen {
+		constructor() {
+			this.selectedItem = 1;
+			this._keyBindings = {87: 'up', 83: 'down', 32: 'spaceBar'};
+		}
+
+		hasKey(key) {
+			return (player.crafting && this._keyBindings[key]) ? true : false;
+		}
+
+		handleKey(key) {
+			if (this._keyBindings[key] === 'up' && this.selectedItem > 0) {
+				this.selectedItem --;
+			} else if (this._keyBindings[key] === 'down' && this.selectedItem < (Object.keys(items).length - 1)) {
+				this.selectedItem ++;
+			} else if (this._keyBindings[key] === 'spaceBar' && player.canCraft(Object.keys(items)[this.selectedItem])) {
+				player.craft(Object.keys(items)[this.selectedItem]);
+			}
+		}
+
+		draw() {
+			let selectedItem = this.selectedItem;
+			Object.keys(items).forEach(function(item, index) {
+				let color = player.canCraft(item) ? 'green' : 'red';
+				if (index === selectedItem) {
+					game.drawText(`-> ${items[item].getRequiredToCraftString()}`, 0, 20 + (index * 20), color);
+					game.drawText(`Description: ${items[item].description}`, screenWidth / 2 - 100, 100);
+				} else {
+					game.drawText(items[item].getRequiredToCraftString(), 0, 20 + (index * 20), color);
+				}
+			});
+		}
+	}
+
+	const craftScreen = new CraftScreen();
+
 	class GameObject {
 		constructor(x, y, sprite) {
 			this.x = x;
@@ -222,14 +280,37 @@ window.onload = function() {
 			this.facing = 'up';
 			this._directions = {'up': {dX: 0, dY: -1}, 'right': {dX: 1, dY: 0}, 'left': {dX: -1, dY: 0}, 'down': {dX: 0, dY: 1}};
 			this._keyBindings = {87: 'up', 38: 'up', 68: 'right', 39: 'right', 65: 'left', 37: 'left', 83: 'down', 40: 'down'};
+			this.crafting = false;
+
+			this.canCraft = this.canCraft.bind(this);
+		}
+
+		craft(item) {
+			this.addToInventory(item, 1);
+			// for loop instead to fix bug
+			for (let i in Object.keys(items[item].requiredToCraft)) {
+				console.log(`${items[item].requiredToCraft[Object.keys(items[item].requiredToCraft)[i]]}`);
+				this.inventory[Object.keys(items[item].requiredToCraft)[i]] -= items[item].requiredToCraft[Object.keys(items[item].requiredToCraft)[i]];
+			}
+			// Object.keys(items[item].requiredToCraft).forEach(function(craftItem, index) {
+			// 	console.log(items[item].requiredToCraft[craftItem]);
+			// 	this.inventory[craftItem] -= items[item].requiredToCraft[craftItem];
+			// });
+		}
+
+		canCraft(item) {
+			let inventory = this.inventory;
+			let craft = true;
+			Object.keys(items[item].requiredToCraft).forEach(function(key) {
+				if (!inventory[key] || !(inventory[key] >= items[item].requiredToCraft[key])) {
+					craft = false;
+				}
+			});
+			return craft;
 		}
 
 		hasKey(key) {
-			if (this._keyBindings[key] || key === 69) {
-				return true;
-			} else {
-				return false;
-			}
+			return ((key === 67) || (!this.crafting && (this._keyBindings[key] || key === 69 || key === 67))) ? true : false;
 		}
 
 		destroyTile(tileX, tileY) {
@@ -245,6 +326,8 @@ window.onload = function() {
 		handleKey(key) {
 			if (key === 69) {
 				this.destroyTile(this.x + this._directions[this.facing].dX, this.y + this._directions[this.facing].dY);
+			} else if (key === 67) {
+				this.crafting ? this.crafting = false : this.crafting = true;
 			} else {
 				this.move(this._directions[this._keyBindings[key]].dX, this._directions[this._keyBindings[key]].dY);
 				this.facing = this._keyBindings[key];
@@ -276,10 +359,13 @@ window.onload = function() {
 		if (player.hasKey(e.keyCode)) {
 			player.handleKey(e.keyCode);
 		}
+		if (craftScreen.hasKey(e.keyCode)) {
+			craftScreen.handleKey(e.keyCode);
+		}
 		console.log(player.x);
 		console.log(player.y);
 		console.log(map.tileGrid[player.x][player.y]);
-		console.log(tiles[map.tileGrid[player.x][player.y]]);
+		console.log(map.getTopTileAt(player.x, player.y));
 	});
 
 	class Game {
@@ -309,9 +395,10 @@ window.onload = function() {
 			this.context.restore();
 		}
 
-		drawText(theString, x, y) {
+		drawText(theString, x, y, color = 'black') {
 			//Draw function for text
 			this.context.save();
+			this.context.fillStyle = color;
 			this.context.font = '16px Verdana';
 			this.context.fillText(theString, x, y);
 			this.context.restore();
@@ -324,8 +411,12 @@ window.onload = function() {
 
 		tick() {
 			this.clear();
-			map.render(player.x, player.y);
-			hud.draw();
+			if (player.crafting) {
+				craftScreen.draw();
+			} else {
+				map.render(player.x, player.y);
+				hud.draw();
+			}
 		}
 	}
 
