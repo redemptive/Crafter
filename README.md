@@ -14,13 +14,17 @@ Simply clone the repository and open the index.html file on any internet browser
 
 ## Controls
 
+### Main Game
+
 Please read this. It's not as fun if you don't know how to play it!
 
-- WASD keys or arrow keys: move the player
-- E key: Action key. Chop down trees, mine rocks etc
-- C key: Toggle crafting menu
+- `WASD` keys or arrow keys: move the player
+- `E` key: Action key. Chop down trees, mine rocks etc
+- `C` key: Toggle crafting menu
+- `<` and `>` keys: Select inventory item
+- `Q` key: Place item if it can be placed
 
 ### Crating Menu
 
-- W and S keys: select which item to craft
-- Space bar: craft
+- `W` and `S` keys: select which item to craft
+- `Space`: craft

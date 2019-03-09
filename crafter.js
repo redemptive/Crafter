@@ -1,13 +1,13 @@
 window.onload = function() {
 	
 	// Cross browser screen size
-	const screenWidth = window.innerWidth
+	const screenWidth = (window.innerWidth
 		|| document.documentElement.clientWidth
-		|| document.body.clientWidth;
+		|| document.body.clientWidth) - 5;
 
-	const screenHeight = window.innerHeight
+	const screenHeight = (window.innerHeight
 		|| document.documentElement.clientHeight
-		|| document.body.clientHeight;
+		|| document.body.clientHeight) - 5;
 
 	
 	const mapSize = 100;
@@ -41,15 +41,17 @@ window.onload = function() {
 		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'stone', 10, false, false),
 		ironRock: new Tile('ironRock', false, 'assets/ironRock.png', true, 'rock', 'iron', 1, false, false),
 		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true),
-		campFire: new Tile('campFire', true, 'assets/campFire.png', false, false, false, false, false, false)
+		campFire: new Tile('campFire', true, 'assets/campFire.png', false, false, false, false, false, false),
+		woodShelter: new Tile('woodShelter', false, 'assets/woodShelter.png', false, false, false, false, false, false)
 	};
 
 	class Item {
-		constructor(name, isCraftable, requiredToCraft, description) {
+		constructor(name, isCraftable, requiredToCraft, description, placesAsTile) {
 			this.name = name;
 			this.isCraftable = isCraftable;
 			this.requiredToCraft = requiredToCraft;
 			this.description = description;
+			this.placesAsTile = placesAsTile;
 		}
 
 		getRequiredToCraftString() {
@@ -62,15 +64,20 @@ window.onload = function() {
 	}
 
 	const items = {
-		campFire: new Item('campFire', true, {wood: 4}, 'A nice cosy campfire'),
-		stoneAxe: new Item('stoneAxe', true, {wood: 2, stone: 2}, 'A sharp flint axe'),
-		stonePickaxe: new Item('stonePickaxe', true, {wood:2, stone: 2}, 'A tough stone pickaxe')
+		campFire: new Item('campFire', true, {wood: 4}, 'A nice cosy campfire', 'campFire'),
+		stoneAxe: new Item('stoneAxe', true, {wood: 2, stone: 2}, 'A sharp flint axe', false),
+		stonePickaxe: new Item('stonePickaxe', true, {wood:2, stone: 2}, 'A tough stone pickaxe', false),
+		woodShelter: new Item('woodShelter', true, {wood: 10}, 'A shelter... for sheltering in', 'woodShelter')
 	};
 
 	class Hud {
 		draw() {
 			Object.keys(player.inventory).forEach(function(key, index) {
-				game.drawText(`${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
+				if (key === Object.keys(player.inventory)[player.selectedItem]) {
+					game.drawText(`-> ${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
+				} else {
+					game.drawText(`${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
+				}
 			});
 		}
 	}
@@ -281,21 +288,27 @@ window.onload = function() {
 			this._directions = {'up': {dX: 0, dY: -1}, 'right': {dX: 1, dY: 0}, 'left': {dX: -1, dY: 0}, 'down': {dX: 0, dY: 1}};
 			this._keyBindings = {87: 'up', 38: 'up', 68: 'right', 39: 'right', 65: 'left', 37: 'left', 83: 'down', 40: 'down'};
 			this.crafting = false;
+			this.selectedItem = 0;
 
 			this.canCraft = this.canCraft.bind(this);
 		}
 
+		getTileInFront() {
+			return {x: this.x + this._directions[this.facing].dX, y: this.y + this._directions[this.facing].dY};
+		}
+
+		placeItem(item) {
+			if (this.inventory[item] && this.inventory[item] > 0) {
+				this.inventory[item]--;
+				map.addTileAt(this.getTileInFront().x, this.getTileInFront().y, items[item].placesAsTile);
+			}
+		}
+
 		craft(item) {
 			this.addToInventory(item, 1);
-			// for loop instead to fix bug
 			for (let i in Object.keys(items[item].requiredToCraft)) {
-				console.log(`${items[item].requiredToCraft[Object.keys(items[item].requiredToCraft)[i]]}`);
 				this.inventory[Object.keys(items[item].requiredToCraft)[i]] -= items[item].requiredToCraft[Object.keys(items[item].requiredToCraft)[i]];
 			}
-			// Object.keys(items[item].requiredToCraft).forEach(function(craftItem, index) {
-			// 	console.log(items[item].requiredToCraft[craftItem]);
-			// 	this.inventory[craftItem] -= items[item].requiredToCraft[craftItem];
-			// });
 		}
 
 		canCraft(item) {
@@ -310,7 +323,7 @@ window.onload = function() {
 		}
 
 		hasKey(key) {
-			return ((key === 67) || (!this.crafting && (this._keyBindings[key] || key === 69 || key === 67))) ? true : false;
+			return ((key === 67) || (!this.crafting && (this._keyBindings[key] || key === 69 || key === 67 || key === 81 || key === 188 || key === 190))) ? true : false;
 		}
 
 		destroyTile(tileX, tileY) {
@@ -328,6 +341,16 @@ window.onload = function() {
 				this.destroyTile(this.x + this._directions[this.facing].dX, this.y + this._directions[this.facing].dY);
 			} else if (key === 67) {
 				this.crafting ? this.crafting = false : this.crafting = true;
+			} else if (key === 81) {
+				this.placeItem(Object.keys(this.inventory)[this.selectedItem]);
+			} else if (key === 188) {
+				if (this.selectedItem > 0) {
+					this.selectedItem--;
+				}
+			} else if (key === 190) {
+				if (this.selectedItem < Object.keys(this.inventory).length - 1) {
+					this.selectedItem++;
+				}
 			} else {
 				this.move(this._directions[this._keyBindings[key]].dX, this._directions[this._keyBindings[key]].dY);
 				this.facing = this._keyBindings[key];
