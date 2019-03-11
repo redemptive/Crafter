@@ -41,7 +41,7 @@ window.onload = function() {
 		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'stone', 10, false, false),
 		ironRock: new Tile('ironRock', false, 'assets/ironRock.png', true, 'rock', 'iron', 1, false, false),
 		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true),
-		campFire: new Tile('campFire', true, 'assets/campFire.png', false, false, false, false, false, false),
+		campFire: new Tile('campFire', false, 'assets/campFire.png', false, false, false, false, false, false),
 		woodShelter: new Tile('woodShelter', false, 'assets/woodShelter.png', false, false, false, false, false, false)
 	};
 
@@ -59,7 +59,7 @@ window.onload = function() {
 			for (let i in Object.keys(this.requiredToCraft)) {
 				string += `${Object.keys(this.requiredToCraft)[i]}: ${this.requiredToCraft[Object.keys(this.requiredToCraft)[i]]}, `;
 			}
-			return string;
+			return string.substring(0, string.length - 2);
 		}
 	}
 
@@ -101,6 +101,10 @@ window.onload = function() {
 					}
 				}
 			}
+
+			// Draw Villages
+			this.drawRandomVillages(randBounds(4, 6), 2, 5);
+
 			//Draw random squares on the map, the order is important
 			this.drawRandomSquares('dirt', randBounds(4, 10), 1, 15, 70, 100);
 			this.drawRandomSquares('water', randBounds(4, 10), 1, 15, 100, 100);
@@ -111,8 +115,6 @@ window.onload = function() {
 			//Draw random lines on the map
 			this.drawRandomLines('dirt', randBounds(5, 10), 1, mapSize);
 			this.drawRandomLines('water', randBounds(5, 10), 1, mapSize);
-
-			this.addTileAt(10, 10, 'campFire');
 
 			// Remove any tiles behind a tile that is a background tile on the screen
 			// Saves memory and number of draw operations per frame when rendered
@@ -127,6 +129,18 @@ window.onload = function() {
 					this.tileGrid[x][y] = this.tileGrid[x][y].splice(lowestBackground, this.tileGrid[x][y].length);
 				}
 			}
+		}
+
+		drawRandomVillages(number, minRadius, maxRadius) {
+			for (let i  = 0; i < number; i++) {
+				this.drawVillage(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minRadius, maxRadius));
+			}
+		}
+
+		drawVillage(x, y, radius) {
+			this.drawSquare(x, y, radius, 'dirt', 100);
+			this.addTileAt(x, y, 'campFire');
+			this.drawSquare(x, y, radius, 'woodShelter', 10);
 		}
 
 		isInBounds(x, y) {
@@ -418,11 +432,11 @@ window.onload = function() {
 			this.context.restore();
 		}
 
-		drawText(theString, x, y, color = 'black') {
+		drawText(theString, x, y, color = 'black', font = 'Verdana', size = 16) {
 			//Draw function for text
 			this.context.save();
 			this.context.fillStyle = color;
-			this.context.font = '16px Verdana';
+			this.context.font = `${size}px ${font}`;
 			this.context.fillText(theString, x, y);
 			this.context.restore();
 		}
