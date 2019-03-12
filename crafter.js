@@ -10,7 +10,6 @@ window.onload = function() {
 		|| document.body.clientHeight) - 5;
 
 	
-	const mapSize = 100;
 	const viewHeight = 5;
 	const viewWidth = 7;
 	const tileWidth = screenWidth / (1 + (viewWidth * 2));
@@ -31,27 +30,15 @@ window.onload = function() {
 		}
 	}
 
-	const tiles = {
-		dirt: new Tile('dirt', true, 'assets/dirt.png', false, false, false, false, true, true),
-		grass: new Tile('grass', true, 'assets/grass.png', false, false, false, false, true, true),
-		water: new Tile('water', true, 'assets/water.png', false, false, false, false, true, false),
-		tree: new Tile('tree', false, 'assets/tree.png', true, 'halfTree', 'wood', 10, false, false),
-		halfTree: new Tile('halfTree', false, 'assets/halfTree.png', true, false, 'wood', 10, false, false),
-		halfRock: new Tile('halfRock', false, 'assets/halfRock.png', true, false, 'stone', 10, false, false),
-		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'stone', 10, false, false),
-		ironRock: new Tile('ironRock', false, 'assets/ironRock.png', true, 'rock', 'iron', 1, false, false),
-		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true),
-		campFire: new Tile('campFire', false, 'assets/campFire.png', false, false, false, false, false, false),
-		woodShelter: new Tile('woodShelter', false, 'assets/woodShelter.png', false, false, false, false, false, false)
-	};
-
 	class Item {
-		constructor(name, isCraftable, requiredToCraft, description, placesAsTile) {
+		constructor(name, isCraftable, requiredToCraft, description, placesAsTile, canEat, hungerFill) {
 			this.name = name;
 			this.isCraftable = isCraftable;
 			this.requiredToCraft = requiredToCraft;
 			this.description = description;
 			this.placesAsTile = placesAsTile;
+			this.canEat = canEat;
+			this.hungerFill = hungerFill;
 		}
 
 		getRequiredToCraftString() {
@@ -63,44 +50,73 @@ window.onload = function() {
 		}
 	}
 
-	const items = {
-		campFire: new Item('campFire', true, {wood: 4}, 'A nice cosy campfire', 'campFire'),
-		stoneAxe: new Item('stoneAxe', true, {wood: 2, stone: 2}, 'A sharp flint axe', false),
-		stonePickaxe: new Item('stonePickaxe', true, {wood:2, stone: 2}, 'A tough stone pickaxe', false),
-		woodShelter: new Item('woodShelter', true, {wood: 10}, 'A shelter... for sheltering in', 'woodShelter')
-	};
+	class Screen {
+		static clear(canvas) {
+			//Clear the canvas to avoid drawing over the last frame
+			let context = canvas.getContext('2d');
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			Screen.drawRect(canvas, canvas.height,canvas.width,0,0,'white');
+		}
 
-	class Hud {
-		draw() {
-			Object.keys(player.inventory).forEach(function(key, index) {
-				if (key === Object.keys(player.inventory)[player.selectedItem]) {
-					game.drawText(`-> ${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
-				} else {
-					game.drawText(`${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
-				}
-			});
+		static drawImg(canvas, width, height, x, y, image) {
+			//Draw an image with the given parameters
+			let context = canvas.getContext('2d');
+			context.drawImage(image, x, y, width, height);
+		}
+
+		static drawRect(canvas, width, height, x , y, color) {
+			//Draw function with rotation if provided
+			let context = canvas.getContext('2d');
+			context.save();
+			context.fillStyle = color;
+			context.translate(x,y);
+			context.rotate(0);
+			context.fillRect(0, 0, width, height);
+			context.restore();
+		}
+		
+		static drawText(canvas, string, x, y, color = 'black', font = 'Times New Roman', size = 26) {
+			//Draw function for text
+			let context = canvas.getContext('2d');
+			context.save();
+			context.fillStyle = color;
+			context.font = `${size}px ${font}`;
+			context.fillText(string, x, y);
+			context.restore();
 		}
 	}
 
-	const hud = new Hud();
+	class Hud extends Screen {
+		draw(canvas) {
+			Object.keys(player.inventory).forEach(function(key, index) {
+				if (key === Object.keys(player.inventory)[player.selectedItem]) {
+					Screen.drawText(canvas, `-> ${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
+				} else {
+					Screen.drawText(canvas, `${key}: ${player.inventory[key]}`, 0, 20 + (index * 20));
+				}
+			});
+			Screen.drawText(canvas, `Hunger: ${player.hunger}`, 0, screenHeight - 25);
+		}
+	}
 
-	class Map {
-		constructor() {
-			this.height = 100;
-			this.width = 100;
+	class Map extends Screen {
+		constructor(xTileNo, yTileNo) {
+			super();
+			this.xTileNo = xTileNo;
+			this.yTileNo = yTileNo;
 			this.tileGrid = [];
 
-			// Build the 2d map array and add base grass and grassRock
-			for (let i = 0; i < mapSize; i++) {
+			// Build the 2d map array and add base grass
+			for (let x = 0; x < xTileNo; x++) {
 				this.tileGrid.push([]);
-				for (let j = 0; j < mapSize; j++) {
-					if (randBounds(0, 10) > 1) {
-						this.tileGrid[i].push(['grass']);
-					} else {
-						this.tileGrid[i].push(['grassRock']);
-					}
+				for (let y = 0; y < yTileNo; y++) {
+					this.tileGrid[x].push(['grass']);
 				}
 			}
+
+			// Draw tiles which crop up randomly in the map
+			this.drawRandomlyAcrossMap('grassRock', 10);
+			this.drawRandomlyAcrossMap('carrot', 0.1);
 
 			// Draw Villages
 			this.drawRandomVillages(randBounds(4, 6), 2, 5);
@@ -113,13 +129,13 @@ window.onload = function() {
 			this.drawRandomSquares('ironRock', randBounds(4, 6), 1, 5, 30, 50);
 
 			//Draw random lines on the map
-			this.drawRandomLines('dirt', randBounds(5, 10), 1, mapSize);
-			this.drawRandomLines('water', randBounds(5, 10), 1, mapSize);
+			this.drawRandomLines('dirt', randBounds(5, 10), 1, this.xTileNo);
+			this.drawRandomLines('water', randBounds(5, 10), 1, this.yTileNo);
 
 			// Remove any tiles behind a tile that is a background tile on the screen
 			// Saves memory and number of draw operations per frame when rendered
-			for (let x = 0; x < mapSize; x++) {
-				for (let y = 0; y < mapSize; y++) {
+			for (let x = 0; x < this.xTileNo; x++) {
+				for (let y = 0; y < this.yTileNo; y++) {
 					let lowestBackground = 0;
 					for (let z = 0; z < this.tileGrid[x][y].length; z++) {
 						if (tiles[this.tileGrid[x][y][z]].isBackground) {
@@ -131,9 +147,19 @@ window.onload = function() {
 			}
 		}
 
+		drawRandomlyAcrossMap(tile, percentChance) {
+			for (let x = 0; x < this.xTileNo; x++) {
+				for (let y = 0; y < this.yTileNo; y++) {
+					if (randBounds(0, 100) <= percentChance) {
+						this.addTileAt(x, y, tile);
+					}
+				}
+			}
+		}
+
 		drawRandomVillages(number, minRadius, maxRadius) {
 			for (let i  = 0; i < number; i++) {
-				this.drawVillage(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minRadius, maxRadius));
+				this.drawVillage(randBounds(0, this.xTileNo), randBounds(0, this.yTileNo), randBounds(minRadius, maxRadius));
 			}
 		}
 
@@ -144,7 +170,7 @@ window.onload = function() {
 		}
 
 		isInBounds(x, y) {
-			return (x >= 0 && x <= mapSize && y >= 0 && y <= mapSize) ? true : false;
+			return (x >= 0 && x <= this.xTileNo && y >= 0 && y <= this.yTileNo) ? true : false;
 		}
 
 		destroyTopTileAt(x, y) {
@@ -168,7 +194,7 @@ window.onload = function() {
 
 		drawRandomSquares(tile, number, minSize, maxSize, minPercentCoverage, maxPercentCoverage) {
 			for (let i = 0; i < number; i++) {
-				this.drawSquare(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minSize, maxSize), tile, randBounds(minPercentCoverage, maxPercentCoverage));
+				this.drawSquare(randBounds(0, this.xTileNo), randBounds(0, this.yTileNo), randBounds(minSize, maxSize), tile, randBounds(minPercentCoverage, maxPercentCoverage));
 			}
 		}
 
@@ -176,7 +202,7 @@ window.onload = function() {
 			//draw a square to the map at x and y with tile and a radius
 			for (let i = x - radius; i < x + radius; i++) {
 				for (let j = y - radius; j < y + radius; j++) {
-					if ((i < mapSize) && (j < mapSize) && (i >= 0) && (j >= 0) && (randBounds(0, 100) <= percentCoverage)) {
+					if ((i < this.xTileNo) && (j < this.yTileNo) && (i >= 0) && (j >= 0) && (randBounds(0, 100) <= percentCoverage)) {
 						this.addTileAt(i, j, tile);
 					}
 				}
@@ -185,7 +211,7 @@ window.onload = function() {
 		
 		drawRandomLines(tile, number, minLength, maxLength) {
 			for (let i = 0; i < number; i++) {
-				this.drawLine(randBounds(0, mapSize), randBounds(0, mapSize), randBounds(minLength, maxLength), tile, Math.random() >= 0.5);
+				this.drawLine(randBounds(0, this.xTileNo), randBounds(0, this.yTileNo), randBounds(minLength, maxLength), tile, Math.random() >= 0.5);
 			}
 		}
 		
@@ -194,21 +220,21 @@ window.onload = function() {
 			//Horizontal line
 			if (horizontal) {
 				for (let i = startY; i < startY + length; i++) {
-					if (i < mapSize) {
+					if (i < this.yTileNo) {
 						this.addTileAt(startX, i, tile);
 					}
 				}
 			} else {
 				//Vertical line
 				for (let i = startX; i < startX + length; i++) {
-					if (i < mapSize) {
+					if (i < this.xTileNo) {
 						this.addTileAt(i, startY, tile);
 					}
 				}
 			}
 		}
 
-		render(centerX, centerY) {
+		render(canvas, centerX, centerY) {
 			// Find where the camera should be centered
 			// If the player is near the edge of the map don't move the camera out of map bounds
 			if (centerX + viewWidth >= this.tileGrid[0].length) {
@@ -226,24 +252,24 @@ window.onload = function() {
 			for (let x = centerX - viewWidth; x <= centerX + viewWidth; x++) {
 				for (let y = centerY - viewHeight; y <= centerY + viewHeight; y++) {
 					for (let z in this.tileGrid[x][y]) {
-						game.drawImg(tileWidth, tileHeight, (x - (centerX - viewWidth)) * tileWidth, (y - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[x][y][z]].sprite);
+						Screen.drawImg(canvas, tileWidth, tileHeight, (x - (centerX - viewWidth)) * tileWidth, (y - (centerY - viewHeight)) * tileHeight, tiles[this.tileGrid[x][y][z]].sprite);
 					}
 				}
 			}
 			//Draw the player
-			game.drawImg(tileWidth, tileHeight, (player.x - (centerX - viewWidth)) * tileWidth, (player.y - (centerY - viewHeight)) * tileHeight, player.sprite);
+			Screen.drawImg(canvas, tileWidth, tileHeight, (player.x - (centerX - viewWidth)) * tileWidth, (player.y - (centerY - viewHeight)) * tileHeight, player.sprite);
 
 			// Draw the npcs
 			for (let i = 0; i < npcNo; i++) {
-				game.drawImg(tileWidth, tileHeight, (npcs[i].x - (centerX - viewWidth)) * tileWidth, (npcs[i].y - (centerY - viewWidth)) * tileHeight, npcs[i].sprite);
+				npcs[i].move();
+				Screen.drawImg(canvas, tileWidth, tileHeight, (npcs[i].x - (centerX - viewWidth)) * tileWidth, (npcs[i].y - (centerY - viewWidth)) * tileHeight, npcs[i].sprite);
 			}
 		}
 	}
 
-	const map = new Map();
-
-	class CraftScreen {
+	class CraftScreen extends Screen {
 		constructor() {
+			super();
 			this.selectedItem = 1;
 			this._keyBindings = {87: 'up', 83: 'down', 32: 'spaceBar'};
 		}
@@ -262,49 +288,67 @@ window.onload = function() {
 			}
 		}
 
-		draw() {
+		draw(canvas) {
 			let selectedItem = this.selectedItem;
-			Object.keys(items).forEach(function(item, index) {
-				let color = player.canCraft(item) ? 'green' : 'red';
+			let index = 0;
+			for (let key in items) {
+				let color = player.canCraft(key) ? 'green' : 'red';
+				let canCraftString = player.canCraft(key)? 'Craft away!' : 'Not enough materials';
 				if (index === selectedItem) {
-					game.drawText(`-> ${items[item].getRequiredToCraftString()}`, 0, 20 + (index * 20), color);
-					game.drawText(`Description: ${items[item].description}`, screenWidth / 2 - 100, 100);
+					Screen.drawText(canvas, `-> ${items[key].getRequiredToCraftString()}`, 0, 20 + (index * 20), color);
+					Screen.drawText(canvas, canCraftString, screenWidth / 2 - 260, 50);
+					Screen.drawText(canvas, `${items[key].description}`, screenWidth / 2 - 260, 100);
 				} else {
-					game.drawText(items[item].getRequiredToCraftString(), 0, 20 + (index * 20), color);
+					Screen.drawText(canvas, items[key].getRequiredToCraftString(), 0, 20 + (index * 20), color);
 				}
-			});
-		}
-	}
-
-	const craftScreen = new CraftScreen();
-
-	class GameObject {
-		constructor(x, y, sprite) {
-			this.x = x;
-			this.y = y;
-			this.sprite = new Image(tileWidth, tileHeight);
-			this.sprite.src = sprite;
-		}
-
-		move(x, y) {
-			if (map.isInBounds(this.x + x, this.y + y) && map.getTopTileAt(this.x + x, this.y + y).canWalkOver) {
-				this.x += x;
-				this.y += y;
+				index ++;
 			}
 		}
 	}
 
+	class GameObject {
+		constructor(x, y, sprite, moveCooldown) {
+			this.x = x;
+			this.y = y;
+			this.sprite = new Image(tileWidth, tileHeight);
+			this.sprite.src = sprite;
+			this.moveCooldown = moveCooldown;
+			this.moveCounter = this.moveCooldown;
+		}
+
+		move(x, y) {
+			if (this.moveCounter === 0) {
+				this.moveCounter = this.moveCooldown;
+				if (map.isInBounds(this.x + x, this.y + y) && map.getTopTileAt(this.x + x, this.y + y).canWalkOver) {
+					this.x += x;
+					this.y += y;
+					return true;
+				}
+			} else {
+				this.moveCounter--;
+			}
+			return false;
+		}
+	}
+
 	class Player extends GameObject {
-		constructor() {
-			super(randBounds(0, mapSize), randBounds(0, mapSize), 'assets/player.png');
+		constructor(moveCooldown) {
+			super(randBounds(0, map.xTileNo), randBounds(0, map.yTileNo), 'assets/player.png', moveCooldown);
 			this.inventory = {};
 			this.facing = 'up';
 			this._directions = {'up': {dX: 0, dY: -1}, 'right': {dX: 1, dY: 0}, 'left': {dX: -1, dY: 0}, 'down': {dX: 0, dY: 1}};
 			this._keyBindings = {87: 'up', 38: 'up', 68: 'right', 39: 'right', 65: 'left', 37: 'left', 83: 'down', 40: 'down'};
 			this.crafting = false;
 			this.selectedItem = 0;
+			this.hunger = 1000;
 
 			this.canCraft = this.canCraft.bind(this);
+		}
+
+		move(x, y) {
+			if (super.move(x, y)) {
+				this.hunger--;
+			}
 		}
 
 		getTileInFront() {
@@ -350,13 +394,24 @@ window.onload = function() {
 			}
 		}
 
+		eat(item) {
+			if (this.inventory[item] && this.inventory[item] > 0) {
+				this.hunger += items[item].hungerFill;
+				this.inventory[item]--;
+			}
+		}
+
 		handleKey(key) {
 			if (key === 69) {
 				this.destroyTile(this.x + this._directions[this.facing].dX, this.y + this._directions[this.facing].dY);
 			} else if (key === 67) {
-				this.crafting ? this.crafting = false : this.crafting = true;
+				this.crafting = !this.crafting;
 			} else if (key === 81) {
-				this.placeItem(Object.keys(this.inventory)[this.selectedItem]);
+				if (items[Object.keys(this.inventory)[this.selectedItem]].placesAsTile) {
+					this.placeItem(Object.keys(this.inventory)[this.selectedItem]);
+				} else if (items[Object.keys(this.inventory)[this.selectedItem]].canEat) {
+					this.eat(Object.keys(this.inventory)[this.selectedItem]);
+				}
 			} else if (key === 188) {
 				if (this.selectedItem > 0) {
 					this.selectedItem--;
@@ -366,8 +421,11 @@ window.onload = function() {
 					this.selectedItem++;
 				}
 			} else {
-				this.move(this._directions[this._keyBindings[key]].dX, this._directions[this._keyBindings[key]].dY);
-				this.facing = this._keyBindings[key];
+				if (this.facing === this._keyBindings[key]) {
+					this.move(this._directions[this._keyBindings[key]].dX, this._directions[this._keyBindings[key]].dY);
+				} else {
+					this.facing = this._keyBindings[key];
+				}
 			}
 		}
 
@@ -377,18 +435,14 @@ window.onload = function() {
 	}
 
 	class Npc extends GameObject {
-		constructor(x, y, sprite) {
-			super(x, y, sprite);
+		constructor(x, y, sprite, moveCooldown) {
+			super(x, y, sprite, moveCooldown);
+		}
+
+		move() {
+			super.move(randBounds(-1, 3), randBounds(-1, 3));
 		}
 	}
-
-	const npcNo = randBounds(5, 10);
-	let npcs = [];
-	for (let i = 0; i < npcNo; i++) {
-		npcs[i] = new Npc(randBounds(0, mapSize), randBounds(0, mapSize), './assets/npc.png');
-	}
-
-	const player = new Player();
 
 	document.addEventListener('keydown', function(e) {
 		//Up
@@ -399,10 +453,6 @@ window.onload = function() {
 		if (craftScreen.hasKey(e.keyCode)) {
 			craftScreen.handleKey(e.keyCode);
 		}
-		console.log(player.x);
-		console.log(player.y);
-		console.log(map.tileGrid[player.x][player.y]);
-		console.log(map.getTopTileAt(player.x, player.y));
 	});
 
 	class Game {
@@ -416,46 +466,53 @@ window.onload = function() {
 			this.interval = setInterval(this.tick, 20);
 		}
 
-		clear() {
-			//Clear the canvas to avoid drawing over the last frame
-			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.draw(this.canvas.height,this.canvas.width,0,0,'white');
-		}
-
-		draw(width, height, x , y, color) {
-			//Draw function with rotation if provided
-			this.context.save();
-			this.context.fillStyle = color;
-			this.context.translate(x,y);
-			this.context.rotate(0);
-			this.context.fillRect(0, 0, width, height);
-			this.context.restore();
-		}
-
-		drawText(theString, x, y, color = 'black', font = 'Verdana', size = 16) {
-			//Draw function for text
-			this.context.save();
-			this.context.fillStyle = color;
-			this.context.font = `${size}px ${font}`;
-			this.context.fillText(theString, x, y);
-			this.context.restore();
-		}
-
-		drawImg(width, height, x, y, image) {
-			//Draw an image with the given parameters
-			this.context.drawImage(image, x, y, width, height);
-		}
-
 		tick() {
-			this.clear();
+			Screen.clear(this.canvas);
 			if (player.crafting) {
-				craftScreen.draw();
+				craftScreen.draw(this.canvas);
 			} else {
-				map.render(player.x, player.y);
-				hud.draw();
+				map.render(this.canvas, player.x, player.y);
+				hud.draw(this.canvas);
 			}
 		}
 	}
+
+	const tiles = {
+		dirt: new Tile('dirt', true, 'assets/dirt.png', false, false, false, false, true, true),
+		grass: new Tile('grass', true, 'assets/grass.png', false, false, false, false, true, true),
+		water: new Tile('water', true, 'assets/water.png', false, false, false, false, true, false),
+		tree: new Tile('tree', false, 'assets/tree.png', true, 'halfTree', 'wood', 2, false, false),
+		halfTree: new Tile('halfTree', false, 'assets/halfTree.png', true, false, 'wood', 2, false, false),
+		halfRock: new Tile('halfRock', false, 'assets/halfRock.png', true, false, 'stone', 2, false, false),
+		rock: new Tile('rock', false, 'assets/rock.png', true, 'halfRock', 'stone', 2, false, false),
+		ironRock: new Tile('ironRock', false, 'assets/ironRock.png', true, 'rock', 'iron', 1, false, false),
+		grassRock: new Tile('grassRock', true, 'assets/grassRock.png', true, 'grass', false, 2, true, true),
+		campFire: new Tile('campFire', false, 'assets/campFire.png', false, false, false, false, false, false),
+		woodShelter: new Tile('woodShelter', false, 'assets/woodShelter.png', false, false, false, false, false, false),
+		carrot: new Tile('carrot', true, 'assets/carrot.png', true, 'grass', 'carrot', 1, false, false),
+	};
+
+	const items = {
+		campFire: new Item('Camp Fire', true, {wood: 4}, 'A nice cosy campfire', 'campFire', false, false),
+		stoneAxe: new Item('Stone Axe', true, {wood: 2, stone: 2}, 'A sharp flint axe', false, false, false),
+		stonePickaxe: new Item('Stone Pickaxe', true, {wood:2, stone: 2}, 'A tough stone pickaxe', false, false, false),
+		woodShelter: new Item('Wooden Shelter', true, {wood: 10}, 'A shelter... for sheltering in', 'woodShelter', false, false),
+		carrot: new Item('Carrot', false, false, 'A tasty carrot', false, true, 10)
+	};
+
+	const hud = new Hud();
+
+	const map = new Map(200, 200);
+
+	const craftScreen = new CraftScreen();
+
+	const npcNo = randBounds(100, 101);
+	let npcs = [];
+	for (let i = 0; i < npcNo; i++) {
+		npcs[i] = new Npc(randBounds(0, map.xTileNo), randBounds(0, map.yTileNo), './assets/npc.png', randBounds(100, 200));
+	}
+
+	const player = new Player(10);
 
 	const game = new Game();
 
